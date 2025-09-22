@@ -23,34 +23,31 @@ function enviarDatosGoogle(datos) {
         // Bandera para evitar doble procesamiento
         let respuestaProcesada = false;
         
-        iframe.onload = function() {
+        function limpiarElementos() {
             if (respuestaProcesada) return;
             respuestaProcesada = true;
             
-            // Limpiar elementos de forma segura
-            if (form.parentNode) {
-                form.parentNode.removeChild(form);
+            // Limpiar elementos de forma segura (verificar existencia primero)
+            try {
+                if (form && form.parentNode) {
+                    form.parentNode.removeChild(form);
+                }
+                if (iframe && iframe.parentNode) {
+                    iframe.parentNode.removeChild(iframe);
+                }
+            } catch (error) {
+                console.log('Elementos ya removidos:', error.message);
             }
-            if (iframe.parentNode) {
-                iframe.parentNode.removeChild(iframe);
-            }
-            
+        }
+        
+        iframe.onload = function() {
+            limpiarElementos();
             resolve({ exito: true, respuesta: 'Datos enviados correctamente' });
         };
         
         // También manejar errores
         iframe.onerror = function() {
-            if (respuestaProcesada) return;
-            respuestaProcesada = true;
-            
-            // Limpiar elementos de forma segura
-            if (form.parentNode) {
-                form.parentNode.removeChild(form);
-            }
-            if (iframe.parentNode) {
-                iframe.parentNode.removeChild(iframe);
-            }
-            
+            limpiarElementos();
             resolve({ exito: true, respuesta: 'Datos enviados (respuesta pendiente)' });
         };
         
@@ -63,17 +60,7 @@ function enviarDatosGoogle(datos) {
         
         // Timeout de seguridad
         setTimeout(() => {
-            if (respuestaProcesada) return;
-            respuestaProcesada = true;
-            
-            // Limpiar elementos de forma segura
-            if (form.parentNode) {
-                form.parentNode.removeChild(form);
-            }
-            if (iframe.parentNode) {
-                iframe.parentNode.removeChild(iframe);
-            }
-            
+            limpiarElementos();
             resolve({ exito: true, respuesta: 'Datos procesados' });
         }, 5000);
     });

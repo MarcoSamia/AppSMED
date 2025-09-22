@@ -925,13 +925,18 @@ function subirADatosGoogle() {
 
   enviarDatosGoogle(datos)
     .then(resultado => {
-      if (resultado.exito) {
-        feedback.innerText = "✅ Datos enviados correctamente";
-        feedback.style.color = "green";
-      } else {
-        feedback.innerText = "❌ Error al enviar los datos";
-        feedback.style.color = "red";
-      }
+        if (resultado.exito) {
+            feedback.innerText = "✅ Datos enviados correctamente";
+            feedback.style.color = "green";
+        } else {
+            feedback.innerText = "❌ Error al enviar los datos";
+            feedback.style.color = "red";
+        }
+    })
+    .catch(error => {
+        console.error('Error al enviar:', error);
+        feedback.innerText = "⚠️ Error de conexión";
+        feedback.style.color = "orange";
     });
   }
 
