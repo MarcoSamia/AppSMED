@@ -933,8 +933,7 @@ function subirADatosGoogle() {
         feedback.style.color = "red";
       }
     });
-
-
+  }
 
 // Funciones para editar la duración de la actividades
 function editarDuracion(tipo, id) {
@@ -1189,5 +1188,4 @@ function limpiarValidaciones() {
     }
   });
   document.getElementById('feedback').innerText = '';
-}
 }
