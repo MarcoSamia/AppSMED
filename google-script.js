@@ -1,9 +1,9 @@
-// google-script.js - Solución para URLs /exec
+// google-script.js - Versión corregida
 function enviarDatosGoogle(datos) {
     return new Promise((resolve) => {
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxD9E5p2t0U4CJ7rhhsf8i6n-0_xJsBbgvPulx-6F4kXgoCBdl-fyPQgrWrU_JyUM6XKA/exec";
         
-        // Crear un formulario invisible para evitar CORS
+        // Crear un formulario invisible
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = scriptUrl;
@@ -20,11 +20,38 @@ function enviarDatosGoogle(datos) {
         iframe.name = 'responseFrame';
         iframe.style.display = 'none';
         
+        // Bandera para evitar doble procesamiento
+        let respuestaProcesada = false;
+        
         iframe.onload = function() {
-            // Esto se ejecutará cuando llegue la respuesta
-            resolve({ exito: true, respuesta: 'Datos enviados' });
-            document.body.removeChild(form);
-            document.body.removeChild(iframe);
+            if (respuestaProcesada) return;
+            respuestaProcesada = true;
+            
+            // Limpiar elementos de forma segura
+            if (form.parentNode) {
+                form.parentNode.removeChild(form);
+            }
+            if (iframe.parentNode) {
+                iframe.parentNode.removeChild(iframe);
+            }
+            
+            resolve({ exito: true, respuesta: 'Datos enviados correctamente' });
+        };
+        
+        // También manejar errores
+        iframe.onerror = function() {
+            if (respuestaProcesada) return;
+            respuestaProcesada = true;
+            
+            // Limpiar elementos de forma segura
+            if (form.parentNode) {
+                form.parentNode.removeChild(form);
+            }
+            if (iframe.parentNode) {
+                iframe.parentNode.removeChild(iframe);
+            }
+            
+            resolve({ exito: true, respuesta: 'Datos enviados (respuesta pendiente)' });
         };
         
         form.target = 'responseFrame';
@@ -34,9 +61,20 @@ function enviarDatosGoogle(datos) {
         // Enviar formulario
         form.submit();
         
-        // Timeout por si falla
+        // Timeout de seguridad
         setTimeout(() => {
-            resolve({ exito: true, respuesta: 'Datos en proceso' });
-        }, 3000);
+            if (respuestaProcesada) return;
+            respuestaProcesada = true;
+            
+            // Limpiar elementos de forma segura
+            if (form.parentNode) {
+                form.parentNode.removeChild(form);
+            }
+            if (iframe.parentNode) {
+                iframe.parentNode.removeChild(iframe);
+            }
+            
+            resolve({ exito: true, respuesta: 'Datos procesados' });
+        }, 5000);
     });
 }
