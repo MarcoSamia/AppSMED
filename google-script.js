@@ -1,6 +1,6 @@
 // google-script.js - Reemplaza la comunicación con tu backend
 async function enviarDatosGoogle(datos) {
-  const scriptUrl = "https://script.google.com/macros/s/AKfycbxRcxGCsNDlDHnWi_LsCMPOzpjwFl1NFhwjjazAU_3OVn6-jWb7pT23qKPSbYIa_sI/exec";
+  const scriptUrl = "https://script.google.com/macros/s/AKfycbxD9E5p2t0U4CJ7rhhsf8i6n-0_xJsBbgvPulx-6F4kXgoCBdl-fyPQgrWrU_JyUM6XKA/exec";
   
   try {
         const response = await fetch(scriptUrl, {
