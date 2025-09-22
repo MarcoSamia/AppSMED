@@ -1,67 +1,55 @@
-// google-script.js - Versión corregida
+// google-script.js - Versión simplificada y robusta
 function enviarDatosGoogle(datos) {
     return new Promise((resolve) => {
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxD9E5p2t0U4CJ7rhhsf8i6n-0_xJsBbgvPulx-6F4kXgoCBdl-fyPQgrWrU_JyUM6XKA/exec";
         
-        // Crear un formulario invisible
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = scriptUrl;
-        form.style.display = 'none';
-        
-        // Agregar datos como input hidden
-        const dataInput = document.createElement('input');
-        dataInput.name = 'data';
-        dataInput.value = JSON.stringify(datos);
-        form.appendChild(dataInput);
-        
-        // Crear iframe para recibir respuesta
-        const iframe = document.createElement('iframe');
-        iframe.name = 'responseFrame';
-        iframe.style.display = 'none';
-        
-        // Bandera para evitar doble procesamiento
-        let respuestaProcesada = false;
-        
-        function limpiarElementos() {
-            if (respuestaProcesada) return;
-            respuestaProcesada = true;
-            
-            // Limpiar elementos de forma segura (verificar existencia primero)
-            try {
-                if (form && form.parentNode) {
-                    form.parentNode.removeChild(form);
-                }
-                if (iframe && iframe.parentNode) {
-                    iframe.parentNode.removeChild(iframe);
-                }
-            } catch (error) {
-                console.log('Elementos ya removidos:', error.message);
-            }
-        }
-        
-        iframe.onload = function() {
-            limpiarElementos();
+        // Usar fetch API en lugar de formulario (más moderno y confiable)
+        fetch(scriptUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'data=' + encodeURIComponent(JSON.stringify(datos))
+        })
+        .then(response => response.text())
+        .then(resultado => {
             resolve({ exito: true, respuesta: 'Datos enviados correctamente' });
-        };
-        
-        // También manejar errores
-        iframe.onerror = function() {
-            limpiarElementos();
-            resolve({ exito: true, respuesta: 'Datos enviados (respuesta pendiente)' });
-        };
-        
-        form.target = 'responseFrame';
-        document.body.appendChild(iframe);
-        document.body.appendChild(form);
-        
-        // Enviar formulario
-        form.submit();
-        
-        // Timeout de seguridad
-        setTimeout(() => {
-            limpiarElementos();
-            resolve({ exito: true, respuesta: 'Datos procesados' });
-        }, 5000);
+        })
+        .catch(error => {
+            console.warn('Error con fetch, intentando método alternativo...', error);
+            // Fallback al método original pero sin manipulación compleja del DOM
+            enviarDatosGoogleFallback(datos, resolve);
+        });
     });
+}
+
+// Método fallback simplificado
+function enviarDatosGoogleFallback(datos, resolve) {
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbxD9E5p2t0U4CJ7rhhsf8i6n-0_xJsBbgvPulx-6F4kXgoCBdl-fyPQgrWrU_JyUM6XKA/exec";
+    
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = scriptUrl;
+    form.style.display = 'none';
+    
+    const dataInput = document.createElement('input');
+    dataInput.name = 'data';
+    dataInput.value = JSON.stringify(datos);
+    form.appendChild(dataInput);
+    
+    document.body.appendChild(form);
+    
+    // Simplemente enviar y resolver después de un tiempo
+    form.submit();
+    
+    setTimeout(() => {
+        try {
+            if (form.parentNode) {
+                form.parentNode.removeChild(form);
+            }
+        } catch (e) {
+            // Ignorar errores de limpieza
+        }
+        resolve({ exito: true, respuesta: 'Datos enviados' });
+    }, 3000);
 }
