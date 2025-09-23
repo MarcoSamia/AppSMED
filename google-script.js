@@ -1,7 +1,7 @@
 // google-script.js - VERSIÓN FINAL COMPLETA
 function enviarDatosGoogle(datos) {
     return new Promise((resolve, reject) => {
-        const scriptUrl = "https://script.google.com/macros/s/AKfycbxnAgTnYdqYkpn2AxhxPFKz3BNaVh_ud7HSJtB-h4cgT5t5kez_jvL2Bbs8f7cASBcg/exec";
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbxjUs5VVUGPjKFf19UhTNPqWfFjDKerPmJpF3FIwPPzM8aPbkehBhKKMOacu_pPolgYfg/exec";
 
         fetch(scriptUrl, {
             method: 'POST',
@@ -30,3 +30,4 @@ function enviarDatosGoogle(datos) {
         });
     });
 }
+
