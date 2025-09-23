@@ -1,7 +1,7 @@
 // google-script.js - Versión simplificada y robusta
 function enviarDatosGoogle(datos) {
     return new Promise((resolve) => {
-        const scriptUrl = "https://script.google.com/macros/s/AKfycbyWRw76UlwEB6vtf3bVNsZw9-4tYEBlBRd07DvKsDaaAuJ9EB5lTAoHeVKOVzb1hwEELw/exec";
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbxnAgTnYdqYkpn2AxhxPFKz3BNaXaVh_ud7HSJtB-h4cgT5t5kez_jvL2Bbs8f7cASBcg/exec";
         
         // Usar fetch API en lugar de formulario (más moderno y confiable)
         fetch(scriptUrl, {
@@ -54,3 +54,4 @@ function enviarDatosGoogleFallback(datos, resolve) {
     }, 3000);
 
 }
+
