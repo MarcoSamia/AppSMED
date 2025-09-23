@@ -1,24 +1,24 @@
-// google-script.js - Versión simplificada y robusta
+// google-script.js - Versión mejorada
 function enviarDatosGoogle(datos) {
-    return new Promise((resolve) => {
-        const scriptUrl = "https://script.google.com/macros/s/AKfycbxnAgTnYdqYkpn2AxhxPFKz3BNaXaVh_ud7HSJtB-h4cgT5t5kez_jvL2Bbs8f7cASBcg/exec";
-        
-        // Usar fetch API en lugar de formulario (más moderno y confiable)
+    return new Promise((resolve, reject) => {
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbxnAgTnYdqYkpn2AxhxPFKz3BNaVh_ud7HSJtB-h4cgT5t5kez_jvL2Bbs8f7cASBcg/exec";
+
         fetch(scriptUrl, {
             method: 'POST',
+            body: JSON.stringify(datos), // Envía el JSON directamente
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Type': 'application/json'
             },
-            body: 'data=' + encodeURIComponent(JSON.stringify(datos))
+            mode: 'no-cors' // Cambiamos el modo para evitar problemas con la redirección
         })
-        .then(response => response.text())
-        .then(resultado => {
-            resolve({ exito: true, respuesta: 'Datos enviados correctamente' });
+        .then(res => {
+            // Con no-cors no podemos leer la respuesta, pero confiamos en que se envió
+            console.log("Solicitud enviada en modo no-cors. Revisa Google Sheets para confirmar.");
+            resolve({ exito: true, respuesta: 'Datos enviados. Revisa la hoja de cálculo para confirmar.' });
         })
         .catch(error => {
-            console.warn('Error con fetch, intentando método alternativo...', error);
-            // Fallback al método original pero sin manipulación compleja del DOM
-            enviarDatosGoogleFallback(datos, resolve);
+            console.error('Error con fetch:', error);
+            reject({ exito: false, respuesta: 'Error al enviar los datos.' });
         });
     });
 }
@@ -54,3 +54,4 @@ function enviarDatosGoogleFallback(datos, resolve) {
     }, 3000);
 
 }
+
