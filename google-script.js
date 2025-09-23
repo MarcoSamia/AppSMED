@@ -1,57 +1,34 @@
-// google-script.js - Versión mejorada
+// google-script.js - Versión final y robusta
 function enviarDatosGoogle(datos) {
     return new Promise((resolve, reject) => {
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxnAgTnYdqYkpn2AxhxPFKz3BNaVh_ud7HSJtB-h4cgT5t5kez_jvL2Bbs8f7cASBcg/exec";
 
         fetch(scriptUrl, {
             method: 'POST',
-            body: JSON.stringify(datos), // Envía el JSON directamente
+            // Quita el 'mode: no-cors' para poder leer la respuesta del servidor.
+            // CORS ya está solucionado en tu script con doOptions.
+            
             headers: {
-                'Content-Type': 'application/json'
+                // Especifica que estás enviando JSON.
+                'Content-Type': 'application/json' 
             },
-            mode: 'no-cors' // Cambiamos el modo para evitar problemas con la redirección
+            // Convierte el objeto de datos a un string JSON y lo pones directamente en el cuerpo.
+            body: JSON.stringify(datos)
         })
-        .then(res => {
-            // Con no-cors no podemos leer la respuesta, pero confiamos en que se envió
-            console.log("Solicitud enviada en modo no-cors. Revisa Google Sheets para confirmar.");
-            resolve({ exito: true, respuesta: 'Datos enviados. Revisa la hoja de cálculo para confirmar.' });
+        .then(res => res.json()) // Parsea la respuesta del script como JSON
+        .then(respuestaDelServidor => {
+            console.log("Respuesta del servidor:", respuestaDelServidor);
+            if (respuestaDelServidor.success) {
+                resolve({ exito: true, respuesta: respuestaDelServidor.message });
+            } else {
+                // Si el script reporta un error, lo rechazamos para que se muestre en el .catch
+                reject({ exito: false, respuesta: respuestaDelServidor.error });
+            }
         })
         .catch(error => {
             console.error('Error con fetch:', error);
-            reject({ exito: false, respuesta: 'Error al enviar los datos.' });
+            // Esto ahora atrapará tanto errores de red como los errores que reporte el script.
+            reject({ exito: false, respuesta: 'Error al contactar el servidor. ' + error });
         });
     });
 }
-
-// Método fallback simplificado
-function enviarDatosGoogleFallback(datos, resolve) {
-    const scriptUrl = "https://script.google.com/macros/s/AKfycbxD9E5p2t0U4CJ7rhhsf8i6n-0_xJsBbgvPulx-6F4kXgoCBdl-fyPQgrWrU_JyUM6XKA/exec";
-    
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = scriptUrl;
-    form.style.display = 'none';
-    
-    const dataInput = document.createElement('input');
-    dataInput.name = 'data';
-    dataInput.value = JSON.stringify(datos);
-    form.appendChild(dataInput);
-    
-    document.body.appendChild(form);
-    
-    // Simplemente enviar y resolver después de un tiempo
-    form.submit();
-    
-    setTimeout(() => {
-        try {
-            if (form.parentNode) {
-                form.parentNode.removeChild(form);
-            }
-        } catch (e) {
-            // Ignorar errores de limpieza
-        }
-        resolve({ exito: true, respuesta: 'Datos enviados' });
-    }, 3000);
-
-}
-
