@@ -2,7 +2,7 @@
 function enviarDatosGoogle(datos) {
     return new Promise((resolve, reject) => {
         // Usa la URL de tu script ORIGINAL, no la de las pruebas.
-        const scriptUrl = "https://script.google.com/macros/s/AKfycbxnAgTnYdqYkpn2AxhxPFKz3BNaVh_ud7HSJtB-h4cgT5t5kez_jvL2Bbs8f7cASBcg/exec";
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbxjUs5VVUGPjKFf19UhTNPqWfFjDKerPmJpF3FIwPPzM8aPbkehBhKKMOacu_pPolgYfg/exec";
         
         // Crear un Iframe oculto para que la página no se recargue
         const iframe = document.createElement('iframe');
@@ -36,3 +36,4 @@ function enviarDatosGoogle(datos) {
         }, 1500); // Esperamos 1.5 segundos
     });
 }
+
