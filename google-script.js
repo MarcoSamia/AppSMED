@@ -1,33 +1,38 @@
-// google-script.js - VERSIÓN FINAL COMPLETA
+// google-script.js - Versión de Bypass con Formulario Oculto
 function enviarDatosGoogle(datos) {
     return new Promise((resolve, reject) => {
-        const scriptUrl = "https://script.google.com/macros/s/AKfycbxjUs5VVUGPjKFf19UhTNPqWfFjDKerPmJpF3FIwPPzM8aPbkehBhKKMOacu_pPolgYfg/exec";
-
-        fetch(scriptUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(datos)
-        })
-        .then(res => {
-            if (!res.ok) { // Si la respuesta no es 2xx, lanza un error
-                throw new Error(`Error en el servidor: ${res.status} ${res.statusText}`);
-            }
-            return res.json();
-        })
-        .then(respuestaDelServidor => {
-            console.log("Respuesta del servidor:", respuestaDelServidor);
-            if (respuestaDelServidor.success) {
-                resolve({ exito: true, respuesta: respuestaDelServidor.message });
-            } else {
-                reject({ exito: false, respuesta: "Error reportado por el script: " + respuestaDelServidor.error });
-            }
-        })
-        .catch(error => {
-            console.error('Error con fetch:', error);
-            reject({ exito: false, respuesta: 'Error al contactar el servidor. ' + error.message });
-        });
+        // Usa la URL de tu script ORIGINAL, no la de las pruebas.
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbxnAgTnYdqYkpn2AxhxPFKz3BNaVh_ud7HSJtB-h4cgT5t5kez_jvL2Bbs8f7cASBcg/exec";
+        
+        // Crear un Iframe oculto para que la página no se recargue
+        const iframe = document.createElement('iframe');
+        iframe.name = 'iframeOculto';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+        
+        // Crear un formulario que apunte al iframe
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = scriptUrl;
+        form.target = iframe.name;
+        
+        // Añadir los datos como un campo del formulario
+        const dataInput = document.createElement('input');
+        dataInput.type = 'hidden';
+        dataInput.name = 'data'; // Un nombre para el campo
+        dataInput.value = JSON.stringify(datos);
+        form.appendChild(dataInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+        
+        // Como este método no puede leer la respuesta del servidor,
+        // asumimos que tuvo éxito después de un breve retraso.
+        setTimeout(() => {
+            document.body.removeChild(form);
+            document.body.removeChild(iframe);
+            console.log("Datos enviados mediante el método de bypass. Revisa Google Sheets.");
+            resolve({ exito: true, respuesta: 'Datos enviados. Revisa la hoja de cálculo para confirmar.' });
+        }, 1500); // Esperamos 1.5 segundos
     });
 }
-
