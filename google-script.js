@@ -1,57 +1,22 @@
-// google-script.js - Versión simplificada y robusta
 function enviarDatosGoogle(datos) {
     return new Promise((resolve) => {
         const scriptUrl = "https://script.google.com/macros/s/AKfycbxnAgTnYdqYkpn2AxhxPFKz3BNaXaVh_ud7HSJtB-h4cgT5t5kez_jvL2Bbs8f7cASBcg/exec";
         
-        // Usar fetch API en lugar de formulario (más moderno y confiable)
         fetch(scriptUrl, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Type': 'application/json',   // 👈 importante
             },
-            body: 'data=' + encodeURIComponent(JSON.stringify(datos))
+            body: JSON.stringify(datos)              // 👈 enviamos JSON puro
         })
-        .then(response => response.text())
+        .then(response => response.json())
         .then(resultado => {
-            resolve({ exito: true, respuesta: 'Datos enviados correctamente' });
+            console.log("Respuesta Apps Script:", resultado);
+            resolve({ exito: true, respuesta: resultado });
         })
         .catch(error => {
-            console.warn('Error con fetch, intentando método alternativo...', error);
-            // Fallback al método original pero sin manipulación compleja del DOM
-            enviarDatosGoogleFallback(datos, resolve);
+            console.error('Error con fetch:', error);
+            resolve({ exito: false, respuesta: error.toString() });
         });
     });
 }
-
-// Método fallback simplificado
-function enviarDatosGoogleFallback(datos, resolve) {
-    const scriptUrl = "https://script.google.com/macros/s/AKfycbxD9E5p2t0U4CJ7rhhsf8i6n-0_xJsBbgvPulx-6F4kXgoCBdl-fyPQgrWrU_JyUM6XKA/exec";
-    
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = scriptUrl;
-    form.style.display = 'none';
-    
-    const dataInput = document.createElement('input');
-    dataInput.name = 'data';
-    dataInput.value = JSON.stringify(datos);
-    form.appendChild(dataInput);
-    
-    document.body.appendChild(form);
-    
-    // Simplemente enviar y resolver después de un tiempo
-    form.submit();
-    
-    setTimeout(() => {
-        try {
-            if (form.parentNode) {
-                form.parentNode.removeChild(form);
-            }
-        } catch (e) {
-            // Ignorar errores de limpieza
-        }
-        resolve({ exito: true, respuesta: 'Datos enviados' });
-    }, 3000);
-
-}
-
