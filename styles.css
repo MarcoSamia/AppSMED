@@ -64,12 +64,11 @@ button {
   font-size: 14px;
 }
 
-.campos-datos input, .campos-datos select {
+.campos-datos input {
   margin-top: 4px;
-  padding: 8px 10px;
+  padding: 4px 6px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  font-size: 14px;
 }
 
 .campo-obligatorio {
@@ -91,7 +90,7 @@ button {
 #tabla thead th {
   background-color: #1e37a4;
   color: white;
-  padding: 12px;
+  padding: 10px;
   text-align: center;
   font-weight: bold;
   border: 1px solid #ccc;
@@ -100,7 +99,7 @@ button {
 #tablaParos thead th {
   background-color: #1e37a4;
   color: white;
-  padding: 12px;
+  padding: 10px;
   text-align: center;
   font-weight: bold;
   border: 1px solid #ccc;
@@ -108,7 +107,7 @@ button {
 
 /* BOTONES */
 .btn {
-  padding: 8px 12px;
+  padding: 6px 12px;
   border: none;
   border-radius: 6px;
   color: white;
@@ -117,7 +116,6 @@ button {
   cursor: pointer;
   transition: all 0.2s ease;
   transform-origin: center;
-  min-width: 40px;
 }
 
 .btn:hover {
@@ -160,10 +158,9 @@ button {
 
 /* TABLAS */
 #tabla tbody td {
-  padding: 8px;
+  padding: 6px;
   border: 1px solid #ccc;
   text-align: center;
-  vertical-align: middle;
 }
 
 /* TOAST NOTIFICATIONS */
@@ -198,16 +195,12 @@ button {
   width: 100%;
   border-collapse: collapse;
   margin-top: 20px;
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 #tabla-checklist thead th {
   background-color: #1e37a4;
   color: white;
-  padding: 12px;
+  padding: 10px;
   border: 1px solid #ccc;
   text-align: center;
   font-weight: bold;
@@ -215,7 +208,7 @@ button {
 
 #tabla-checklist tbody td {
   border: 1px solid #ccc;
-  padding: 12px;
+  padding: 8px 12px;
   vertical-align: middle;
 }
 
@@ -232,6 +225,82 @@ button {
 #tabla-checklist input[type="checkbox"] {
   transform: scale(1.3);
   cursor: pointer;
+}
+
+/* ESTILOS PARA VALIDACIÓN DE DATOS */
+.campo-valido {
+  border-left: 3px solid #4CAF50 !important;
+  background-color: #f8fff8 !important;
+}
+
+.campo-invalido {
+  border-left: 3px solid #F44336 !important;
+  background-color: #fff8f8 !important;
+}
+
+.campo-obligatorio:not(:focus) {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { background-color: #fff9f9; }
+  50% { background-color: #fff0f0; }
+}
+
+.valid-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+}
+
+.valid-icon.valid {
+  color: #4CAF50;
+}
+
+.valid-icon.invalid {
+  color: #F44336;
+}
+
+/* ANIMACIONES Y EFECTOS */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+#tabla tr, #tablaParos tr {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.guardado {
+  animation: bounce 0.5s;
+}
+
+/* Sortable.js clases */
+.sortable-chosen {
+  opacity: 0.8;
+  box-shadow: 0 0 15px rgba(0,0,0,0.2);
+  border-radius: 8px;
+  transform: scale(1.02);
+}
+
+.sortable-ghost {
+  opacity: 0.4;
+}
+
+/* Campos de edición de tiempo */
+.edit-tiempo-input {
+  width: 70px;
+  padding: 6px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
 /* RESPONSIVE - MÓVILES */
@@ -308,6 +377,30 @@ button {
     text-align: right;
   }
   
+  /* formato de celda de "Orden" */
+  #tabla td.drag-handle {
+    background-color: #1e37a4;
+    color: white;              
+    text-align: center;
+    font-weight: bold;
+  }
+
+  #tabla td.drag-handle .drag-icon {
+    color: white;
+    font-size: 30px;
+  }
+  #tabla td.drag-handle::before {
+    color: white !important;
+    font-weight: bold;
+  }
+  
+  /* Resaltar nombre de actividades en móvil */
+  #tabla td.editable {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+  }
+  
   /* Drag handle para móviles */
   .drag-handle {
     display: table-cell !important;
@@ -327,6 +420,53 @@ button {
     color: #1e37a4;
   }
   
+  /* Botones de paros específicos para móvil */
+  #tablaParos .btn {
+    width: 36px;     
+    height: 36px;
+    display: flex;   
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;  
+    padding: 0;      
+    margin: 2px;      
+    border-radius: 6px; 
+  }
+  
+  #tablaParos td[data-label="Acciones"] {
+    display: flex;
+    gap: 5px;
+    justify-content: flex-end;
+  }
+  
+  #tablaParos td[data-label="Acciones"] button {
+    flex: none;
+    width: 40px;
+    padding: 6px 0;
+  }
+  
+  /* Botones de eliminar en móvil */
+  #tablaParos button.icon-btn,
+  #tabla button[onclick^="eliminarActividad"] {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;  
+    padding: 0;
+    margin: 2px;
+    border-radius: 6px;
+    background: #f8f8f8;
+    border: 1px solid #ddd;
+    cursor: pointer;
+  }
+
+  #tablaParos button.icon-btn:hover,
+  #tabla button[onclick^="eliminarActividad"]:hover {
+    background: #f0f0f0;
+  }
+  
   /* Botón flotante para móviles */
   #btn-add-mobile {
     position: fixed;
@@ -339,7 +479,7 @@ button {
     color: white;
     font-size: 28px;
     font-weight: bold;
-    display: none;
+    display: flex;
     justify-content: center;
     align-items: center;
     box-shadow: 0 4px 8px rgba(0,0,0,0.3);
@@ -350,12 +490,6 @@ button {
   
   #btn-add-mobile:hover {
     background: #14266d;
-  }
-  
-  @media (max-width: 768px) {
-    #btn-add-mobile {
-      display: flex;
-    }
   }
   
   /* Selectores responsivos */
@@ -404,74 +538,38 @@ button {
     margin: 15px 0;
     letter-spacing: 1px;
   }
-}
-
-/* ANIMACIONES */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-#tabla tr, #tablaParos tr {
-  animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes bounce {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
-
-.guardado {
-  animation: bounce 0.5s;
-}
-
-/* Sortable.js clases */
-.sortable-chosen {
-  opacity: 0.8;
-  box-shadow: 0 0 15px rgba(0,0,0,0.2);
-  border-radius: 8px;
-  transform: scale(1.02);
-}
-
-.sortable-ghost {
-  opacity: 0.4;
-}
-
-/* Campos de edición de tiempo */
-.edit-tiempo-input {
-  width: 70px;
-  padding: 6px;
-  font-size: 14px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-@media (max-width: 768px) {
+  
+  /* Campos de edición de tiempo en móvil */
   .edit-tiempo-input {
     width: 100%;
     padding: 10px;
     font-size: 16px;
   }
-}
+  
+  /* Formato de campos dato del cambio de molde */
+  #datosMolde input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 12px;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    font-size: 1rem;
+    background-color: #f9f9f9;
+  }
 
-/* Validación visual */
-.campo-valido {
-  border-left: 3px solid #4CAF50 !important;
-  background-color: #f8fff8 !important;
-}
+  #datosMolde input:focus {
+    border-color: #1e37a4;
+    background: #fff;
+    box-shadow: 0 0 6px rgba(30,55,164,0.3);
+    outline: none;
+  }
 
-.campo-invalido {
-  border-left: 3px solid #F44336 !important;
-  background-color: #fff8f8 !important;
-}
-
-.campo-obligatorio:not(:focus) {
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { background-color: #fff9f9; }
-  50% { background-color: #fff0f0; }
+  #datosMolde label {
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: block;
+    color: #333;
+  }
 }
 
 /* Navegación móvil */
