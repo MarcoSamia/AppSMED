@@ -3,11 +3,10 @@ const actividades = [
   "Desconectar molde",
   "Desmontaje de molde",
   "Bajar recamara",
-  "Cambio de altura",
-  "Cambio de vastago",
+  "Cambio de bloque de altura",
+  "Cambio de vastago/pistón",
   "Colocar recamara nueva",
   "Meter molde a maquina",
-  "Montar vastago",
   "Conectar molde",
   "Cambio de cabezal",
   "Arranque de máquina (procesos)"  
@@ -197,6 +196,7 @@ function iniciarPorNombre(nombre) {
   }, 100);
 
   guardarEstado();
+  actualizarBotones(nombre);
 }
 
 
@@ -227,6 +227,7 @@ function detenerPorNombre(nombre) {
   celda.innerText = formatearTiempo(t.duracion);
 
   guardarEstado();
+  actualizarBotones(nombre);
 }
 
 
@@ -350,6 +351,16 @@ function confirmarCambioNombre(celda, nombreViejo, nuevoNombre) {
     selectResponsable.id = `responsable-${idNuevo}`;
     selectResponsable.setAttribute("onchange", `actualizarResponsable('${nuevoNombre}', this.value)`);
   }
+    // Reiniciar el timer si estaba corriendo (para evitar NaN:NaN)
+  if (tiempos[nuevoNombre].estado === "corriendo") {
+    clearInterval(tiempos[nuevoNombre].timerID);
+    const celda = document.getElementById(`duracion-${idNuevo}`);
+    tiempos[nuevoNombre].timerID = setInterval(() => {
+      const ahora = new Date();
+      const tiempoTotal = tiempos[nuevoNombre].tiempoAcumulado + (ahora - tiempos[nuevoNombre].inicio) / 1000;
+      celda.innerText = formatearTiempo(tiempoTotal);
+    }, 100);
+  }
 
   guardarEstado();
 }
@@ -387,6 +398,28 @@ mostrarToast(`Actividad "${nombre}" eliminada`, 'warning');
   guardarEstado();
 }
 
+function actualizarBotones(nombre) {
+  const fila = Array.from(tabla.querySelectorAll("tr"))
+    .find(tr => tr.children[1].innerText === nombre);
+  if (!fila) return;
+
+  const [btnIniciar, btnPausar, btnDetener] = fila.querySelectorAll("td[data-label='Acciones'] button");
+  const estado = tiempos[nombre].estado;
+
+  if (estado === "detenido") {
+    btnIniciar.disabled = false;
+    btnPausar.disabled = true;
+    btnDetener.disabled = true;
+  } else if (estado === "corriendo") {
+    btnIniciar.disabled = true;
+    btnPausar.disabled = false;
+    btnDetener.disabled = false;
+  } else if (estado === "pausado") {
+    btnIniciar.disabled = true;
+    btnPausar.disabled = false; // aquí funciona como "reanudar"
+    btnDetener.disabled = false;
+  }
+}
 
 
 // Función para pausar y reanudar el tiempo 
@@ -427,6 +460,7 @@ function pausarReanudar(nombre, boton) {
   }
 
   guardarEstado();
+  actualizarBotones(nombre);
 }
 
 
