@@ -1077,35 +1077,40 @@ function editarDuracionDesktop(tipo, id) {
     const segundos = editor.querySelector('#edit-sec').value.padStart(2, '0');
     const segundosTotales = parseInt(minutos) * 60 + parseInt(segundos);
 
-  if (tipo === "actividad" && tiempos[id]) {
-  tiempos[id].tiempoAcumulado = segundosTotales;
-  tiempos[id].duracion = segundosTotales;
+    if (tipo === "actividad" && tiempos[id]) {
+      tiempos[id].tiempoAcumulado = segundosTotales;
+      tiempos[id].duracion = segundosTotales;
 
-  // Si estaba corriendo → forzar a pausado para evitar inconsistencias
-  // Si estaba pausado → mantener pausado
-  // Si estaba detenido → mantener detenido
-  if (tiempos[id].estado === "corriendo") {
-    tiempos[id].estado = "pausado";
-    clearInterval(tiempos[id].timerID);
-    tiempos[id].timerID = null;
-  }
-} else if (tipo === "paro" && parosExternos[id]) {
-  parosExternos[id].tiempoAcumulado = segundosTotales;
-  parosExternos[id].duracion = segundosTotales;
+      if (tiempos[id].estado === "corriendo") {
+        tiempos[id].estado = "pausado";
+        clearInterval(tiempos[id].timerID);
+        tiempos[id].timerID = null;
+      } else if (tiempos[id].estado === "pausado") {
+        tiempos[id].estado = "pausado"; // mantener
+      } else {
+        tiempos[id].estado = "detenido"; // mantener
+      }
+    } else if (tipo === "paro" && parosExternos[id]) {
+      parosExternos[id].tiempoAcumulado = segundosTotales;
+      parosExternos[id].duracion = segundosTotales;
 
-  if (parosExternos[id].estado === "corriendo") {
-    parosExternos[id].estado = "pausado";
-    clearInterval(parosExternos[id].timerID);
-    parosExternos[id].timerID = null;
-  }
-}
-
+      if (parosExternos[id].estado === "corriendo") {
+        parosExternos[id].estado = "pausado";
+        clearInterval(parosExternos[id].timerID);
+        parosExternos[id].timerID = null;
+      } else if (parosExternos[id].estado === "pausado") {
+        parosExternos[id].estado = "pausado";
+      } else {
+        parosExternos[id].estado = "detenido";
+      }
+    }
 
     celda.innerText = `${minutos}:${segundos}`;
     guardarEstado();
     modal.remove();
   });
 }
+
 
 
 // Funciones para editar la fecha
