@@ -1077,22 +1077,35 @@ function editarDuracionDesktop(tipo, id) {
     const segundos = editor.querySelector('#edit-sec').value.padStart(2, '0');
     const segundosTotales = parseInt(minutos) * 60 + parseInt(segundos);
 
-    if (tipo === "actividad" && tiempos[id]) {
-      tiempos[id].tiempoAcumulado = segundosTotales;
-      tiempos[id].duracion = segundosTotales;
-      tiempos[id].estado = "detenido";
-    } else if (tipo === "paro" && parosExternos[id]) {
-      parosExternos[id].tiempoAcumulado = segundosTotales;
-      parosExternos[id].duracion = segundosTotales;
-      parosExternos[id].estado = "detenido";
-    }
+  if (tipo === "actividad" && tiempos[id]) {
+  tiempos[id].tiempoAcumulado = segundosTotales;
+  tiempos[id].duracion = segundosTotales;
+
+  // Si estaba corriendo → forzar a pausado para evitar inconsistencias
+  // Si estaba pausado → mantener pausado
+  // Si estaba detenido → mantener detenido
+  if (tiempos[id].estado === "corriendo") {
+    tiempos[id].estado = "pausado";
+    clearInterval(tiempos[id].timerID);
+    tiempos[id].timerID = null;
+  }
+} else if (tipo === "paro" && parosExternos[id]) {
+  parosExternos[id].tiempoAcumulado = segundosTotales;
+  parosExternos[id].duracion = segundosTotales;
+
+  if (parosExternos[id].estado === "corriendo") {
+    parosExternos[id].estado = "pausado";
+    clearInterval(parosExternos[id].timerID);
+    parosExternos[id].timerID = null;
+  }
+}
+
 
     celda.innerText = `${minutos}:${segundos}`;
     guardarEstado();
     modal.remove();
   });
 }
-
 
 
 // Funciones para editar la fecha
