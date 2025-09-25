@@ -1013,6 +1013,9 @@ function editarDuracionDesktop(tipo, id) {
   const valorActual = celda.innerText.trim();
   const [minActual, segActual] = valorActual.split(":").map(part => part.padStart(2, '0'));
 
+  // Guardar el estado actual ANTES de editar
+  const estadoAnterior = tipo === "actividad" ? tiempos[id].estado : parosExternos[id].estado;
+
   // Crear modal específico para edición
   const modal = document.createElement('div');
   modal.style.position = 'fixed';
@@ -1081,36 +1084,46 @@ function editarDuracionDesktop(tipo, id) {
       tiempos[id].tiempoAcumulado = segundosTotales;
       tiempos[id].duracion = segundosTotales;
 
-      if (tiempos[id].estado === "corriendo") {
-        tiempos[id].estado = "pausado";
-        clearInterval(tiempos[id].timerID);
-        tiempos[id].timerID = null;
-      } else if (tiempos[id].estado === "pausado") {
-        tiempos[id].estado = "pausado"; // mantener
-      } else {
-        tiempos[id].estado = "detenido"; // mantener
+      // RESTAURAR EL ESTADO ANTERIOR en lugar de forzar a "pausado"
+      tiempos[id].estado = estadoAnterior;
+
+      // Si estaba corriendo, mantener el timer activo
+      if (estadoAnterior === "corriendo") {
+        tiempos[id].inicio = new Date();
+        tiempos[id].timerID = setInterval(() => {
+          const ahora = new Date();
+          const tiempoTotal = tiempos[id].tiempoAcumulado + (ahora - tiempos[id].inicio) / 1000;
+          celda.innerText = formatearTiempo(tiempoTotal);
+        }, 100);
       }
     } else if (tipo === "paro" && parosExternos[id]) {
       parosExternos[id].tiempoAcumulado = segundosTotales;
       parosExternos[id].duracion = segundosTotales;
 
-      if (parosExternos[id].estado === "corriendo") {
-        parosExternos[id].estado = "pausado";
-        clearInterval(parosExternos[id].timerID);
-        parosExternos[id].timerID = null;
-      } else if (parosExternos[id].estado === "pausado") {
-        parosExternos[id].estado = "pausado";
-      } else {
-        parosExternos[id].estado = "detenido";
+      // RESTAURAR EL ESTADO ANTERIOR
+      parosExternos[id].estado = estadoAnterior;
+
+      // Si estaba corriendo, mantener el timer activo
+      if (estadoAnterior === "corriendo") {
+        parosExternos[id].inicio = new Date();
+        parosExternos[id].timerID = setInterval(() => {
+          const ahora = new Date();
+          const tiempoTotal = parosExternos[id].tiempoAcumulado + (ahora - parosExternos[id].inicio) / 1000;
+          celda.innerText = formatearTiempo(tiempoTotal);
+        }, 100);
       }
     }
 
     celda.innerText = `${minutos}:${segundos}`;
     guardarEstado();
     modal.remove();
+    
+    // Actualizar botones después de la edición
+    if (tipo === "actividad") {
+      actualizarBotones(id);
+    }
   });
 }
-
 
 
 // Funciones para editar la fecha
