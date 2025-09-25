@@ -976,8 +976,22 @@ function subirADatosGoogle() {
 
 // Funciones para editar la duración de la actividades
 function editarDuracion(tipo, id) {
+  if (tipo === "actividad" && tiempos[id]) {
+    if (tiempos[id].estado === "corriendo") {
+      mostrarToast(`La actividad "${id}" debe pausarse o detenerse antes de editar el tiempo.`, "warning");
+      return;
+    }
+  } else if (tipo === "paro" && parosExternos[id]) {
+    if (parosExternos[id].estado === "corriendo") {
+      mostrarToast(`El paro "${parosExternos[id].nombre}" debe pausarse o detenerse antes de editar el tiempo.`, "warning");
+      return;
+    }
+  }
+
+  // Si pasa la validación, abrimos el editor
   editarDuracionDesktop(tipo, id);
 }
+
 function editarDuracionDesktop(tipo, id) {
   // Validar que la actividad/paro no esté corriendo
   if (tipo === "actividad" && tiempos[id]) {
