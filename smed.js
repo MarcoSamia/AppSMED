@@ -979,6 +979,19 @@ function editarDuracion(tipo, id) {
   editarDuracionDesktop(tipo, id);
 }
 function editarDuracionDesktop(tipo, id) {
+  // Validar que la actividad/paro no esté corriendo
+  if (tipo === "actividad" && tiempos[id]) {
+    if (tiempos[id].estado === "corriendo") {
+      mostrarToast(`La actividad "${id}" debe pausarse o detenerse antes de editar el tiempo.`, "warning");
+      return;
+    }
+  } else if (tipo === "paro" && parosExternos[id]) {
+    if (parosExternos[id].estado === "corriendo") {
+      mostrarToast(`El paro "${parosExternos[id].nombre}" debe pausarse o detenerse antes de editar el tiempo.`, "warning");
+      return;
+    }
+  }
+
   const celdaID = tipo === "actividad" ? `duracion-${id.replace(/\s+/g, "_")}` : `duracion-paro-${id}`;
   const celda = document.getElementById(celdaID);
   if (!celda) return;
@@ -986,7 +999,7 @@ function editarDuracionDesktop(tipo, id) {
   const valorActual = celda.innerText.trim();
   const [minActual, segActual] = valorActual.split(":").map(part => part.padStart(2, '0'));
 
-  // Crear modal específico para móviles
+  // Crear modal específico para edición
   const modal = document.createElement('div');
   modal.style.position = 'fixed';
   modal.style.top = '0';
@@ -1007,7 +1020,7 @@ function editarDuracionDesktop(tipo, id) {
   editor.style.width = '90%';
   editor.style.maxWidth = '400px';
 
-  // Inputs para minutos y segundos
+  // Inputs
   editor.innerHTML = `
     <h3 style="margin-top: 0; color: #1e37a4">Editar tiempo</h3>
     <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center">
@@ -1030,18 +1043,17 @@ function editarDuracionDesktop(tipo, id) {
   modal.appendChild(editor);
   document.body.appendChild(modal);
 
-  // Focus automático en minutos
+  // Focus automático
   const inputMin = editor.querySelector('#edit-min');
   inputMin.focus();
   inputMin.select();
 
-  // Validación de segundos
   const inputSec = editor.querySelector('#edit-sec');
   inputSec.addEventListener('input', (e) => {
     if (parseInt(e.target.value) > 59) e.target.value = '59';
   });
 
-  // Funcionalidad de botones
+  // Eventos botones
   editor.querySelector('#edit-cancel').addEventListener('click', () => {
     modal.remove();
   });
@@ -1049,37 +1061,21 @@ function editarDuracionDesktop(tipo, id) {
   editor.querySelector('#edit-save').addEventListener('click', () => {
     const minutos = editor.querySelector('#edit-min').value.padStart(2, '0');
     const segundos = editor.querySelector('#edit-sec').value.padStart(2, '0');
-    const nuevoValor = `${minutos}:${segundos}`;
     const segundosTotales = parseInt(minutos) * 60 + parseInt(segundos);
 
-    // Actualizar el objeto correspondiente
     if (tipo === "actividad" && tiempos[id]) {
       tiempos[id].tiempoAcumulado = segundosTotales;
       tiempos[id].duracion = segundosTotales;
-      if (tiempos[id].timerID) {
-        clearInterval(tiempos[id].timerID);
-        tiempos[id].timerID = null;
-      }
       tiempos[id].estado = "detenido";
     } else if (tipo === "paro" && parosExternos[id]) {
       parosExternos[id].tiempoAcumulado = segundosTotales;
       parosExternos[id].duracion = segundosTotales;
-      if (parosExternos[id].timerID) {
-        clearInterval(parosExternos[id].timerID);
-        parosExternos[id].timerID = null;
-      }
       parosExternos[id].estado = "detenido";
     }
 
-    celda.innerText = nuevoValor;
+    celda.innerText = `${minutos}:${segundos}`;
     guardarEstado();
     modal.remove();
-    mostrarToast('Tiempo actualizado', 'success');
-  });
-
-  // Cerrar al hacer clic fuera
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) modal.remove();
   });
 }
 
