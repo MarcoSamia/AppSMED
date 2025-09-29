@@ -329,6 +329,8 @@ function editarNombre(celda, nombreViejo) {
     }
   };
 }
+
+
 function confirmarCambioNombre(celda, nombreViejo, nuevoNombre) {
   nuevoNombre = nuevoNombre.trim();
 
@@ -348,6 +350,17 @@ function confirmarCambioNombre(celda, nombreViejo, nuevoNombre) {
     return;
   }
 
+  // Guardar la posición actual de la fila
+  const fila = celda.parentElement;
+  const tablaBody = fila.parentElement;
+  const indiceFila = Array.from(tablaBody.children).indexOf(fila);
+
+  // Actualizar el array actividades manteniendo la posición
+  const indiceEnActividades = actividades.indexOf(nombreViejo);
+  if (indiceEnActividades !== -1) {
+    actividades[indiceEnActividades] = nuevoNombre;
+  }
+
   // Copiar datos del objeto tiempos
   tiempos[nuevoNombre] = { 
     ...tiempos[nombreViejo], 
@@ -357,8 +370,6 @@ function confirmarCambioNombre(celda, nombreViejo, nuevoNombre) {
 
   const idViejo = nombreViejo.replace(/\s+/g, "_");
   const idNuevo = nuevoNombre.replace(/\s+/g, "_");
-
-  const fila = celda.parentElement;
 
   // Actualizar celda de nombre
   fila.children[1].innerText = nuevoNombre;
@@ -388,10 +399,10 @@ function confirmarCambioNombre(celda, nombreViejo, nuevoNombre) {
   // Actualizar select de responsable
   const selectResponsable = fila.querySelector("select");
   if (selectResponsable) {
-    selectResponsable.id = `responsable-${idNuevo}`;
     selectResponsable.setAttribute("onchange", `actualizarResponsable('${nuevoNombre}', this.value)`);
   }
-    // Reiniciar el timer si estaba corriendo (para evitar NaN:NaN)
+
+  // Reiniciar el timer si estaba corriendo (para evitar NaN:NaN)
   if (tiempos[nuevoNombre].estado === "corriendo") {
     clearInterval(tiempos[nuevoNombre].timerID);
     const celda = document.getElementById(`duracion-${idNuevo}`);
@@ -402,9 +413,15 @@ function confirmarCambioNombre(celda, nombreViejo, nuevoNombre) {
     }, 100);
   }
 
-  guardarEstado();
-}
+  // Asegurar que la fila mantenga su posición en el DOM
+  // (Sortable.js ya maneja el orden visual, pero por si acaso)
+  if (indiceFila !== -1 && fila.parentElement === tablaBody) {
+    // La fila ya está en la posición correcta, no necesitamos moverla
+  }
 
+  guardarEstado();
+  mostrarToast(`Actividad renombrada a "${nuevoNombre}"`, 'success');
+}
 
 
 
@@ -501,8 +518,16 @@ function pausarReanudar(nombre, boton) {
 }
 
 function guardarEstado() {
+  // Obtener las actividades en el orden actual de la tabla
+  const actividadesEnOrden = Array.from(document.querySelectorAll("#tabla tbody tr"))
+    .map(fila => {
+      const nombre = fila.children[1].innerText;
+      return tiempos[nombre];
+    })
+    .filter(actividad => actividad && actividad.nombre);
+
   const datos = {
-    actividades: Object.values(tiempos).filter(t => t && t.nombre), // Guardar todas las actividades en tiempos
+    actividades: actividadesEnOrden, // Guardar en el orden actual de la tabla
     parosExternos: Object.values(parosExternos),
     datosCambio: {
       inyectora: document.getElementById("inyectora").value,
@@ -551,9 +576,10 @@ function cargarEstado() {
   
   // PRIMERO cargar actividades guardadas si existen
   if (actividadesGuardadas && actividadesGuardadas.length > 0) {
-    // Usar las actividades guardadas como base
+    // Usar las actividades guardadas manteniendo el orden
     actividades = actividadesGuardadas.map(a => a.nombre);
     
+    // Crear las filas en el orden guardado
     actividadesGuardadas.forEach(actividad => {
       if (actividad && actividad.nombre) {
         agregarFila(actividad.nombre);
