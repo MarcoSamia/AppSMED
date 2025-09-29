@@ -606,3 +606,43 @@ hr {
   border: none;
   border-top: 1px solid #ddd;
 }
+
+/* MEJORAS PARA SORTABLE EN MÓVILES */
+.sortable-ghost {
+  opacity: 0.4;
+  background: #f8f9fa;
+}
+
+.sortable-chosen {
+  transform: rotate(2deg);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.sortable-drag {
+  opacity: 0.8;
+  background: white;
+}
+
+/* PREVENIR SELECTION DURING DRAG */
+body.sortable-dragging {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* MEJORAR DRAG HANDLE EN MÓVILES */
+.drag-icon {
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: grab;
+}
+
+.drag-icon:active {
+  cursor: grabbing;
+}
+
