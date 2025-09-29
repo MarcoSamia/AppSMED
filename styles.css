@@ -646,3 +646,11 @@ body.sortable-dragging {
   cursor: grabbing;
 }
 
+#modal-editar-tiempo * {
+  pointer-events: auto !important;
+}
+
+#edit-cancel, #edit-save {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
