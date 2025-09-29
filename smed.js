@@ -9,6 +9,8 @@ const actividades = [
   "Meter molde a maquina",
   "Conectar molde",
   "Cambio de cabezal",
+  "Desconectar y desmontar troquel",
+  "Montar y conectar troquel",
   "Arranque de máquina (procesos)"  
 ];
 
