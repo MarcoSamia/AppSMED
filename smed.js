@@ -38,25 +38,54 @@ function mostrarToast(mensaje, tipo = 'success', duracion = 3000) {
 function inicializarSortable() {
   const tablaBody = document.querySelector("#tabla tbody");
   
-  new Sortable(tablaBody, {
+  // Destruir instancia anterior si existe
+  if (tablaBody.sortableInstance) {
+    tablaBody.sortableInstance.destroy();
+  }
+  
+  tablaBody.sortableInstance = new Sortable(tablaBody, {
     animation: 150,
     handle: ".drag-icon",
     filter: ".ignore-elements",
     preventOnFilter: false,
-    onStart: function() {
-      document.body.style.overflow = 'hidden';
-    },
-    onEnd: function() {
-      document.body.style.overflow = '';
-      guardarEstado();
-    },
-    // Configuración mejorada para móviles
-    touchStartThreshold: 8,
-    delay: 100,
+    
+    // MEJORAS PARA MÓVILES
+    touchStartThreshold: 5,
+    delay: 150, // Aumentar delay para móviles
     delayOnTouchOnly: true,
-    forceFallback: true, // Forzar el modo fallback para mejor compatibilidad
-    fallbackOnBody: true,
-    fallbackTolerance: 5
+    
+    // CONFIGURACIÓN MEJORADA
+    forceFallback: false, // Cambiar a false para mejor rendimiento
+    fallbackOnBody: false,
+    fallbackTolerance: 3,
+    
+    // MEJORAR COMPORTAMIENTO EN MÓVIL
+    ghostClass: "sortable-ghost",
+    chosenClass: "sortable-chosen",
+    dragClass: "sortable-drag",
+    
+    onStart: function(evt) {
+      document.body.style.cursor = 'grabbing';
+      document.body.style.userSelect = 'none';
+      isDragging = true;
+    },
+    
+    onEnd: function(evt) {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      isDragging = false;
+      
+      // Forzar actualización del estado
+      setTimeout(() => {
+        guardarEstado();
+      }, 100);
+    },
+    
+    // PREVENIR PROBLEMAS DE SCROLL
+    onMove: function(evt) {
+      // Permitir scroll natural en móviles
+      return true;
+    }
   });
 }
 
@@ -840,6 +869,10 @@ window.onload = function() {
   const hoy = new Date();
   document.getElementById("fechaCambio").value = hoy.toLocaleDateString("es-MX");
   document.getElementById("semanaCambio").value = obtenerNumeroSemana(hoy);
+
+  setTimeout(() => {
+    inicializarSortable(); // Reinicializar Sortable después del reset
+  }, 500);
 });
 
 }
@@ -1023,6 +1056,7 @@ function editarDuracionDesktop(tipo, id) {
 
   // Crear modal específico para edición
   const modal = document.createElement('div');
+  modal.id = 'modal-editar-tiempo';
   modal.style.position = 'fixed';
   modal.style.top = '0';
   modal.style.left = '0';
@@ -1032,7 +1066,7 @@ function editarDuracionDesktop(tipo, id) {
   modal.style.display = 'flex';
   modal.style.justifyContent = 'center';
   modal.style.alignItems = 'center';
-  modal.style.zIndex = '1000';
+  modal.style.zIndex = '10000'; // Z-index más alto
 
   // Contenedor del editor
   const editor = document.createElement('div');
@@ -1041,6 +1075,7 @@ function editarDuracionDesktop(tipo, id) {
   editor.style.borderRadius = '10px';
   editor.style.width = '90%';
   editor.style.maxWidth = '400px';
+  editor.style.position = 'relative';
 
   // Inputs
   editor.innerHTML = `
@@ -1057,8 +1092,8 @@ function editarDuracionDesktop(tipo, id) {
       </div>
     </div>
     <div style="display: flex; gap: 10px">
-      <button id="edit-cancel" style="flex: 1; padding: 10px; background: #f44336; color: white; border: none; border-radius: 5px">Cancelar</button>
-      <button id="edit-save" style="flex: 1; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px">Guardar</button>
+      <button type="button" id="edit-cancel" style="flex: 1; padding: 10px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer">Cancelar</button>
+      <button type="button" id="edit-save" style="flex: 1; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer">Guardar</button>
     </div>
   `;
 
@@ -1071,19 +1106,30 @@ function editarDuracionDesktop(tipo, id) {
   inputMin.select();
 
   const inputSec = editor.querySelector('#edit-sec');
+  
+  // Validación de segundos
   inputSec.addEventListener('input', (e) => {
-    if (parseInt(e.target.value) > 59) e.target.value = '59';
+    let value = parseInt(e.target.value) || 0;
+    if (value > 59) e.target.value = '59';
+    if (value < 0) e.target.value = '0';
   });
 
-  // Eventos botones
-  editor.querySelector('#edit-cancel').addEventListener('click', () => {
-    modal.remove();
+  // Validación de minutos
+  inputMin.addEventListener('input', (e) => {
+    let value = parseInt(e.target.value) || 0;
+    if (value < 0) e.target.value = '0';
   });
 
-  editor.querySelector('#edit-save').addEventListener('click', () => {
-    const minutos = editor.querySelector('#edit-min').value.padStart(2, '0');
-    const segundos = editor.querySelector('#edit-sec').value.padStart(2, '0');
+  // Función para guardar
+  const guardarCambios = () => {
+    const minutos = inputMin.value.padStart(2, '0');
+    const segundos = inputSec.value.padStart(2, '0');
     const segundosTotales = parseInt(minutos) * 60 + parseInt(segundos);
+
+    if (isNaN(segundosTotales)) {
+      mostrarToast("Tiempo inválido", "error");
+      return;
+    }
 
     if (tipo === "actividad" && tiempos[id]) {
       tiempos[id].tiempoAcumulado = segundosTotales;
@@ -1126,6 +1172,35 @@ function editarDuracionDesktop(tipo, id) {
     // Actualizar botones después de la edición
     if (tipo === "actividad") {
       actualizarBotones(id);
+    }
+    
+    mostrarToast("Tiempo actualizado correctamente", "success");
+  };
+
+  // Función para cancelar
+  const cancelar = () => {
+    modal.remove();
+  };
+
+  // Eventos botones - usar onclick directo para evitar problemas
+  editor.querySelector('#edit-cancel').onclick = cancelar;
+  editor.querySelector('#edit-save').onclick = guardarCambios;
+
+  // También permitir Enter para guardar, Escape para cancelar
+  const handleKeydown = (e) => {
+    if (e.key === 'Enter') {
+      guardarCambios();
+    } else if (e.key === 'Escape') {
+      cancelar();
+    }
+  };
+
+  editor.addEventListener('keydown', handleKeydown);
+
+  // Cerrar modal al hacer clic fuera
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      cancelar();
     }
   });
 }
@@ -1274,3 +1349,21 @@ function limpiarValidaciones() {
   });
   document.getElementById('feedback').innerText = '';
 }
+
+// Funciones auxiliares para mejorar experiencia táctil
+function handleTouchStart(element) {
+  if (isDragging) return;
+  // Permitir comportamiento normal si no estamos arrastrando
+}
+
+function handleTouchEnd(element) {
+  if (isDragging) return;
+  // Permitir comportamiento normal si no estamos arrastrando
+}
+
+// Prevenir problemas de scroll en móviles durante drag
+document.addEventListener('touchmove', function(e) {
+  if (isDragging) {
+    e.preventDefault();
+  }
+}, { passive: false });
