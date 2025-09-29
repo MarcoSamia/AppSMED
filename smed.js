@@ -287,6 +287,9 @@ function agregarActividad() {
     return;
   }
 
+  // AGREGAR AL ARRAY DE ACTIVIDADES ACTUALES
+  actividades.push(nombre);
+  
   agregarFila(nombre);
   input.value = "";
   const nuevaFila = tabla.lastElementChild;
@@ -295,6 +298,7 @@ function agregarActividad() {
   mostrarToast(`Actividad "${nombre}" agregada`, 'success');
   guardarEstado();
 }
+
 function mostrarInputActividad() {
   const nombre = prompt("Escribe el nombre de la nueva actividad:");
   if (nombre && nombre.trim() !== "") {
@@ -416,21 +420,18 @@ function eliminarActividad(boton, nombre) {
 
   // Eliminar de estructura de datos
   delete tiempos[nombre];
-  if (tiempos[nombre]?.nombre === undefined) {
-  delete tiempos[nombre];
-}
+
+  // Eliminar del array actividades
+  const index = actividades.indexOf(nombre);
+  if (index !== -1) {
+    actividades.splice(index, 1);
+  }
 
   // Eliminar fila del DOM
   const fila = boton.closest("tr");
   fila.remove();
 
-  // También elimina del array base (si está)
-  const index = actividades.indexOf(nombre);
-  if (index !== -1) {
-    actividades.splice(index, 1);
-}
-mostrarToast(`Actividad "${nombre}" eliminada`, 'warning');
-
+  mostrarToast(`Actividad "${nombre}" eliminada`, 'warning');
   guardarEstado();
 }
 
@@ -499,6 +500,26 @@ function pausarReanudar(nombre, boton) {
   actualizarBotones(nombre);
 }
 
+function guardarEstado() {
+  const datos = {
+    actividades: Object.values(tiempos).filter(t => t && t.nombre), // Guardar todas las actividades en tiempos
+    parosExternos: Object.values(parosExternos),
+    datosCambio: {
+      inyectora: document.getElementById("inyectora").value,
+      moldeSale: document.getElementById("moldeSale").value,
+      moldeEntra: document.getElementById("moldeEntra").value,
+      tipoCambio: document.getElementById("tipoCambio").value,
+      tiempoObjetivo: document.getElementById("tiempoObjetivo").value,
+      horaInicio: document.getElementById("horaInicio").value,
+      horaTermino: document.getElementById("horaTermino").value,
+      fechaCambio: document.getElementById("fechaCambio").value,
+      semanaCambio: document.getElementById("semanaCambio").value,
+      razonCambio: document.getElementById("razonCambio").value
+    }
+  };
+  localStorage.setItem("estadoSMED", JSON.stringify(datos));
+}
+
 
 function cargarEstado() {
   const datos = JSON.parse(localStorage.getItem("estadoSMED"));
@@ -528,48 +549,13 @@ function cargarEstado() {
   // Limpiar tabla y objeto tiempos
   tabla.innerHTML = "";
   
-  // Usar actividades base como referencia principal
-  actividades = [...actividadesBase];
-  
-  // Si hay actividades guardadas, mezclarlas inteligentemente
+  // PRIMERO cargar actividades guardadas si existen
   if (actividadesGuardadas && actividadesGuardadas.length > 0) {
-    // Para cada actividad base, verificar si existe en guardadas
-    actividadesBase.forEach(nombreBase => {
-      const actividadGuardada = actividadesGuardadas.find(a => a && a.nombre === nombreBase);
-      
-      if (actividadGuardada) {
-        // Si existe, usar los datos guardados
-        agregarFila(nombreBase);
-        tiempos[nombreBase] = { ...actividadGuardada };
-        
-        const celdaDuracion = document.getElementById(`duracion-${nombreBase.replace(/\s+/g, "_")}`);
-        
-        if (actividadGuardada.estado === "corriendo") {
-          const t = tiempos[nombreBase];
-          t.inicio = new Date(t.inicio);
-          t.timerID = setInterval(() => {
-            const ahora = new Date();
-            const tiempoTotal = t.tiempoAcumulado + (ahora - t.inicio) / 1000;
-            celdaDuracion.innerText = formatearTiempo(tiempoTotal);
-          }, 100);
-        } else {
-          celdaDuracion.innerText = formatearTiempo(actividadGuardada.tiempoAcumulado || 0);
-        }
-        
-        const select = tabla.querySelector(`tr:last-child select`);
-        if (select && actividadGuardada.responsable) {
-          select.value = actividadGuardada.responsable;
-        }
-      } else {
-        // Si no existe en guardadas, crear nueva
-        agregarFila(nombreBase);
-      }
-    });
+    // Usar las actividades guardadas como base
+    actividades = actividadesGuardadas.map(a => a.nombre);
     
-    // Agregar actividades adicionales que no están en la base
     actividadesGuardadas.forEach(actividad => {
-      if (actividad && actividad.nombre && !actividadesBase.includes(actividad.nombre)) {
-        actividades.push(actividad.nombre);
+      if (actividad && actividad.nombre) {
         agregarFila(actividad.nombre);
         tiempos[actividad.nombre] = { ...actividad };
         
@@ -594,11 +580,12 @@ function cargarEstado() {
       }
     });
   } else {
-    // No hay actividades guardadas, usar solo base
+    // Si no hay actividades guardadas, usar actividades base
+    actividades = [...actividadesBase];
     crearFilasIniciales();
   }
 
-  // Cargar paros externos (código existente)
+  // Cargar paros externos
   if (parosGuardados) {
     parosGuardados.forEach(p => {
       parosExternos[p.id] = p;
@@ -624,7 +611,7 @@ function cargarEstado() {
 
       if (p.estado === "corriendo") {
         const celda = document.getElementById(`duracion-paro-${p.id}`);
-        p.inicio = new Date(p.inicio); // restaurar objeto Date
+        p.inicio = new Date(p.inicio);
         p.timerID = setInterval(() => {
           const ahora = new Date();
           const tiempoTotal = p.tiempoAcumulado + (ahora - p.inicio) / 1000;
