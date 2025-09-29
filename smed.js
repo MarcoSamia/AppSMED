@@ -359,6 +359,9 @@ function confirmarCambioNombre(celda, nombreViejo, nuevoNombre) {
   const indiceEnActividades = actividades.indexOf(nombreViejo);
   if (indiceEnActividades !== -1) {
     actividades[indiceEnActividades] = nuevoNombre;
+  } else {
+    // Si por alguna razón no se encuentra, agregar al final como fallback
+    actividades.push(nuevoNombre);
   }
 
   // Copiar datos del objeto tiempos
@@ -575,9 +578,18 @@ function cargarEstado() {
   tabla.innerHTML = "";
   
   // PRIMERO cargar actividades guardadas si existen
-  if (actividadesGuardadas && actividadesGuardadas.length > 0) {
-    // Usar las actividades guardadas manteniendo el orden
-    actividades = actividadesGuardadas.map(a => a.nombre);
+if (actividadesGuardadas && actividadesGuardadas.length > 0) {
+  // Usar las actividades guardadas manteniendo el orden EXACTO
+  actividades = actividadesGuardadas.map(a => a.nombre);
+  
+  // Limpiar tabla completamente antes de recrear
+  tabla.innerHTML = "";
+  
+  // Crear las filas en el orden guardado EXACTO
+  actividadesGuardadas.forEach(actividad => {
+    if (actividad && actividad.nombre) {
+      agregarFila(actividad.nombre);
+      tiempos[actividad.nombre] = { ...actividad };
     
     // Crear las filas en el orden guardado
     actividadesGuardadas.forEach(actividad => {
