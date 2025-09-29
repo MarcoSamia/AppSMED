@@ -1054,93 +1054,94 @@ function editarDuracionDesktop(tipo, id) {
   // Guardar el estado actual ANTES de editar
   const estadoAnterior = tipo === "actividad" ? tiempos[id].estado : parosExternos[id].estado;
 
-  // Crear modal específico para edición
+  // Crear modal - ENFOQUE SIMPLIFICADO
   const modal = document.createElement('div');
   modal.id = 'modal-editar-tiempo';
   modal.style.position = 'fixed';
   modal.style.top = '0';
   modal.style.left = '0';
-  modal.style.right = '0';
-  modal.style.bottom = '0';
-  modal.style.backgroundColor = 'rgba(0,0,0,0.7)';
+  modal.style.width = '100%';
+  modal.style.height = '100%';
+  modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
   modal.style.display = 'flex';
   modal.style.justifyContent = 'center';
   modal.style.alignItems = 'center';
-  modal.style.zIndex = '10000'; // Z-index más alto
+  modal.style.zIndex = '10000';
 
   // Contenedor del editor
   const editor = document.createElement('div');
   editor.style.backgroundColor = 'white';
   editor.style.padding = '20px';
-  editor.style.borderRadius = '10px';
-  editor.style.width = '90%';
-  editor.style.maxWidth = '400px';
-  editor.style.position = 'relative';
+  editor.style.borderRadius = '8px';
+  editor.style.width = '300px';
+  editor.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
 
-  // Inputs
   editor.innerHTML = `
-    <h3 style="margin-top: 0; color: #1e37a4">Editar tiempo</h3>
-    <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center">
-      <div style="flex: 1">
-        <label style="display: block; margin-bottom: 5px; font-weight: bold">Minutos</label>
-        <input type="number" id="edit-min" value="${minActual}" min="0" max="999" class="edit-tiempo-input">
+    <h3 style="margin: 0 0 15px 0; color: #1e37a4; text-align: center;">Editar Tiempo</h3>
+    <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center; justify-content: center;">
+      <div>
+        <label style="display: block; margin-bottom: 5px; font-weight: bold; text-align: center;">Minutos</label>
+        <input type="number" id="edit-min" value="${parseInt(minActual)}" min="0" max="999" 
+               style="width: 80px; padding: 8px; text-align: center; border: 1px solid #ccc; border-radius: 4px; font-size: 16px;">
       </div>
-      <span style="font-size: 24px">:</span>
-      <div style="flex: 1">
-        <label style="display: block; margin-bottom: 5px; font-weight: bold">Segundos</label>
-        <input type="number" id="edit-sec" value="${segActual}" min="0" max="59" class="edit-tiempo-input">
+      <span style="font-size: 20px; margin-top: 20px;">:</span>
+      <div>
+        <label style="display: block; margin-bottom: 5px; font-weight: bold; text-align: center;">Segundos</label>
+        <input type="number" id="edit-sec" value="${parseInt(segActual)}" min="0" max="59" 
+               style="width: 80px; padding: 8px; text-align: center; border: 1px solid #ccc; border-radius: 4px; font-size: 16px;">
       </div>
     </div>
-    <div style="display: flex; gap: 10px">
-      <button type="button" id="edit-cancel" style="flex: 1; padding: 10px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer">Cancelar</button>
-      <button type="button" id="edit-save" style="flex: 1; padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer">Guardar</button>
+    <div style="display: flex; gap: 10px;">
+      <button type="button" id="edit-cancel" 
+              style="flex: 1; padding: 10px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+        Cancelar
+      </button>
+      <button type="button" id="edit-save" 
+              style="flex: 1; padding: 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+        Guardar
+      </button>
     </div>
   `;
 
   modal.appendChild(editor);
   document.body.appendChild(modal);
 
-  // Focus automático
-  const inputMin = editor.querySelector('#edit-min');
-  inputMin.focus();
-  inputMin.select();
+  // Referencias a los elementos
+  const inputMin = document.getElementById('edit-min');
+  const inputSec = document.getElementById('edit-sec');
+  const btnCancel = document.getElementById('edit-cancel');
+  const btnSave = document.getElementById('edit-save');
 
-  const inputSec = editor.querySelector('#edit-sec');
-  
-  // Validación de segundos
-  inputSec.addEventListener('input', (e) => {
-    let value = parseInt(e.target.value) || 0;
-    if (value > 59) e.target.value = '59';
-    if (value < 0) e.target.value = '0';
-  });
+  // Función para cerrar el modal
+  function cerrarModal() {
+    if (document.body.contains(modal)) {
+      document.body.removeChild(modal);
+    }
+  }
 
-  // Validación de minutos
-  inputMin.addEventListener('input', (e) => {
-    let value = parseInt(e.target.value) || 0;
-    if (value < 0) e.target.value = '0';
-  });
-
-  // Función para guardar
-  const guardarCambios = () => {
-    const minutos = inputMin.value.padStart(2, '0');
-    const segundos = inputSec.value.padStart(2, '0');
-    const segundosTotales = parseInt(minutos) * 60 + parseInt(segundos);
-
-    if (isNaN(segundosTotales)) {
-      mostrarToast("Tiempo inválido", "error");
+  // Función para guardar los cambios
+  function guardarCambios() {
+    const minutos = parseInt(inputMin.value) || 0;
+    const segundos = parseInt(inputSec.value) || 0;
+    
+    if (minutos < 0 || segundos < 0 || segundos > 59) {
+      mostrarToast("Valores de tiempo inválidos", "error");
       return;
     }
 
+    const segundosTotales = minutos * 60 + segundos;
+    const tiempoFormateado = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
+
+    // Actualizar el objeto correspondiente
     if (tipo === "actividad" && tiempos[id]) {
       tiempos[id].tiempoAcumulado = segundosTotales;
       tiempos[id].duracion = segundosTotales;
-
-      // RESTAURAR EL ESTADO ANTERIOR en lugar de forzar a "pausado"
       tiempos[id].estado = estadoAnterior;
 
-      // Si estaba corriendo, mantener el timer activo
+      // Si estaba corriendo, reiniciar el timer
       if (estadoAnterior === "corriendo") {
         tiempos[id].inicio = new Date();
+        if (tiempos[id].timerID) clearInterval(tiempos[id].timerID);
         tiempos[id].timerID = setInterval(() => {
           const ahora = new Date();
           const tiempoTotal = tiempos[id].tiempoAcumulado + (ahora - tiempos[id].inicio) / 1000;
@@ -1150,13 +1151,12 @@ function editarDuracionDesktop(tipo, id) {
     } else if (tipo === "paro" && parosExternos[id]) {
       parosExternos[id].tiempoAcumulado = segundosTotales;
       parosExternos[id].duracion = segundosTotales;
-
-      // RESTAURAR EL ESTADO ANTERIOR
       parosExternos[id].estado = estadoAnterior;
 
-      // Si estaba corriendo, mantener el timer activo
+      // Si estaba corriendo, reiniciar el timer
       if (estadoAnterior === "corriendo") {
         parosExternos[id].inicio = new Date();
+        if (parosExternos[id].timerID) clearInterval(parosExternos[id].timerID);
         parosExternos[id].timerID = setInterval(() => {
           const ahora = new Date();
           const tiempoTotal = parosExternos[id].tiempoAcumulado + (ahora - parosExternos[id].inicio) / 1000;
@@ -1165,44 +1165,52 @@ function editarDuracionDesktop(tipo, id) {
       }
     }
 
-    celda.innerText = `${minutos}:${segundos}`;
+    // Actualizar la celda visualmente
+    celda.innerText = tiempoFormateado;
     guardarEstado();
-    modal.remove();
+    cerrarModal();
     
-    // Actualizar botones después de la edición
     if (tipo === "actividad") {
       actualizarBotones(id);
     }
     
     mostrarToast("Tiempo actualizado correctamente", "success");
-  };
+  }
 
-  // Función para cancelar
-  const cancelar = () => {
-    modal.remove();
-  };
+  // Event listeners DIRECTOS - sin delegación
+  btnCancel.onclick = cerrarModal;
+  btnSave.onclick = guardarCambios;
 
-  // Eventos botones - usar onclick directo para evitar problemas
-  editor.querySelector('#edit-cancel').onclick = cancelar;
-  editor.querySelector('#edit-save').onclick = guardarCambios;
-
-  // También permitir Enter para guardar, Escape para cancelar
-  const handleKeydown = (e) => {
+  // Eventos de teclado
+  const handleKeydown = function(e) {
     if (e.key === 'Enter') {
       guardarCambios();
     } else if (e.key === 'Escape') {
-      cancelar();
+      cerrarModal();
     }
   };
 
-  editor.addEventListener('keydown', handleKeydown);
+  document.addEventListener('keydown', handleKeydown);
 
-  // Cerrar modal al hacer clic fuera
-  modal.addEventListener('click', (e) => {
+  // Cerrar al hacer clic fuera del modal
+  modal.onclick = function(e) {
     if (e.target === modal) {
-      cancelar();
+      cerrarModal();
     }
-  });
+  };
+
+  // Limpiar event listeners cuando se cierre el modal
+  const originalCerrarModal = cerrarModal;
+  cerrarModal = function() {
+    document.removeEventListener('keydown', handleKeydown);
+    originalCerrarModal();
+  };
+
+  // Enfoque automático
+  setTimeout(() => {
+    inputMin.focus();
+    inputMin.select();
+  }, 100);
 }
 
 
