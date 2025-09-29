@@ -262,8 +262,9 @@ function detenerPorNombre(nombre) {
   const celda = document.getElementById(`duracion-${nombre.replace(/\s+/g, "_")}`);
   celda.innerText = formatearTiempo(t.duracion);
 
-  guardarEstado();
   actualizarBotones(nombre);
+  guardarEstado();
+  
 }
 
 
@@ -460,18 +461,35 @@ function actualizarBotones(nombre) {
   const [btnIniciar, btnPausar, btnDetener] = fila.querySelectorAll("td[data-label='Acciones'] button");
   const estado = tiempos[nombre].estado;
 
+  // Resetear todos los botones primero
+  btnIniciar.disabled = false;
+  btnPausar.disabled = false;
+  btnDetener.disabled = false;
+
+  // Aplicar lógica según el estado
   if (estado === "detenido") {
     btnIniciar.disabled = false;
-    btnPausar.disabled = true;
-    btnDetener.disabled = true;
+    btnPausar.disabled = true;  // No se puede pausar si está detenido
+    btnDetener.disabled = true; // No se puede detener si está detenido
   } else if (estado === "corriendo") {
-    btnIniciar.disabled = true;
-    btnPausar.disabled = false;
-    btnDetener.disabled = false;
+    btnIniciar.disabled = true;  // No se puede iniciar si ya está corriendo
+    btnPausar.disabled = false;  // Se puede pausar
+    btnDetener.disabled = false; // Se puede detener
   } else if (estado === "pausado") {
-    btnIniciar.disabled = true;
-    btnPausar.disabled = false; // aquí funciona como "reanudar"
-    btnDetener.disabled = false;
+    btnIniciar.disabled = true;  // No se puede iniciar si está pausado
+    btnPausar.disabled = false;  // Se puede reanudar (mismo botón)
+    btnDetener.disabled = true; // Se puede detener
+  }
+
+  // Actualizar también el texto/icono del botón de pausa/reanudar
+  if (estado === "pausado") {
+    btnPausar.innerHTML = '<span class="icon-reanudar">▶</span>';
+    btnPausar.classList.remove('pausar');
+    btnPausar.classList.add('reanudar');
+  } else {
+    btnPausar.innerHTML = '<span class="icon-pausar">⏸</span>';
+    btnPausar.classList.remove('reanudar');
+    btnPausar.classList.add('pausar');
   }
 }
 
@@ -513,8 +531,8 @@ function pausarReanudar(nombre, boton) {
     }, 100);
   }
 
-  guardarEstado();
   actualizarBotones(nombre);
+  guardarEstado();
 }
 
 function guardarEstado() {
