@@ -1,5 +1,5 @@
 // Actividades iniciales de la tabla
-const actividades = [
+const actividadesBase = [
   "Desconectar molde",
   "Desmontaje de molde",
   "Bajar recamara",
@@ -14,7 +14,7 @@ const actividades = [
   "Arranque de máquina (procesos)"  
 ];
 
-
+let actividades = [...actividadesBase];
 
 // Función para mostrar notificacioness toast
 function mostrarToast(mensaje, tipo = 'success', duracion = 3000) {
@@ -158,6 +158,11 @@ function agregarFila(nombre) {
   }
 }
 
+// Función para crear filas iniciales usando el array actual
+function crearFilasIniciales() {
+  tabla.innerHTML = "";
+  actividades.forEach(nombre => agregarFila(nombre));
+}
 
 
 // Función para actualizar el responsable de las actividades
@@ -466,47 +471,16 @@ function pausarReanudar(nombre, boton) {
 }
 
 
-
-// Funciones para guardar y cargar el estado de la aplicación
-function guardarEstado() {
-  const datos = {
-    actividades: Array.from(document.querySelectorAll("#tabla tbody tr")).map(fila => {
-      const nombre = fila.children[1].innerText;
-      return tiempos[nombre];
-    }),
-    parosExternos: Object.values(parosExternos),
-    datosCambio: {
-      inyectora: document.getElementById("inyectora").value,
-      moldeSale: document.getElementById("moldeSale").value,
-      moldeEntra: document.getElementById("moldeEntra").value,
-      tipoCambio: document.getElementById("tipoCambio").value,
-      tiempoObjetivo: document.getElementById("tiempoObjetivo").value,
-      horaInicio: document.getElementById("horaInicio").value,
-      horaTermino: document.getElementById("horaTermino").value,
-      fechaCambio: document.getElementById("fechaCambio").value,
-      semanaCambio: document.getElementById("semanaCambio").value,
-      razonCambio: document.getElementById("razonCambio").value
-    }
-  };
-  localStorage.setItem("estadoSMED", JSON.stringify(datos));
-}
 function cargarEstado() {
   const datos = JSON.parse(localStorage.getItem("estadoSMED"));
-  if (!datos) return;
-
-  if (datos.actividades) {
-    datos.actividades.forEach(actividad => {
-      if (actividad && actividad.nombre && actividad.responsable) {
-        if (!tiempos[actividad.nombre]) {
-          tiempos[actividad.nombre] = actividad;
-        } else {
-          tiempos[actividad.nombre].responsable = actividad.responsable;
-        }
-      }
-    });
+  
+  // Si no hay datos guardados, usar actividades base
+  if (!datos) {
+    crearFilasIniciales();
+    return;
   }
 
-  const { actividades, datosCambio, parosExternos: parosGuardados } = datos;
+  const { actividades: actividadesGuardadas, datosCambio, parosExternos: parosGuardados } = datos;
 
   // Cargar datos del cambio
   if (datosCambio) {
@@ -515,7 +489,6 @@ function cargarEstado() {
     document.getElementById("moldeEntra").value = datosCambio.moldeEntra || "";
     document.getElementById("tipoCambio").value = datosCambio.tipoCambio || "";
     document.getElementById("tiempoObjetivo").value = datosCambio.tiempoObjetivo || "";
-    document.getElementById("tiempoObjetivo").value = datosCambio.tiempoObjetivo || "";
     document.getElementById("fechaCambio").value = datosCambio.fechaCambio || "";
     document.getElementById("semanaCambio").value = datosCambio.semanaCambio || "";
     document.getElementById("horaInicio").value = datosCambio.horaInicio || "";
@@ -523,7 +496,80 @@ function cargarEstado() {
     document.getElementById("razonCambio").value = datosCambio.razonCambio || "";
   }
 
-  // Cargar paros externos
+  // Limpiar tabla y objeto tiempos
+  tabla.innerHTML = "";
+  
+  // Usar actividades base como referencia principal
+  actividades = [...actividadesBase];
+  
+  // Si hay actividades guardadas, mezclarlas inteligentemente
+  if (actividadesGuardadas && actividadesGuardadas.length > 0) {
+    // Para cada actividad base, verificar si existe en guardadas
+    actividadesBase.forEach(nombreBase => {
+      const actividadGuardada = actividadesGuardadas.find(a => a && a.nombre === nombreBase);
+      
+      if (actividadGuardada) {
+        // Si existe, usar los datos guardados
+        agregarFila(nombreBase);
+        tiempos[nombreBase] = { ...actividadGuardada };
+        
+        const celdaDuracion = document.getElementById(`duracion-${nombreBase.replace(/\s+/g, "_")}`);
+        
+        if (actividadGuardada.estado === "corriendo") {
+          const t = tiempos[nombreBase];
+          t.inicio = new Date(t.inicio);
+          t.timerID = setInterval(() => {
+            const ahora = new Date();
+            const tiempoTotal = t.tiempoAcumulado + (ahora - t.inicio) / 1000;
+            celdaDuracion.innerText = formatearTiempo(tiempoTotal);
+          }, 100);
+        } else {
+          celdaDuracion.innerText = formatearTiempo(actividadGuardada.tiempoAcumulado || 0);
+        }
+        
+        const select = tabla.querySelector(`tr:last-child select`);
+        if (select && actividadGuardada.responsable) {
+          select.value = actividadGuardada.responsable;
+        }
+      } else {
+        // Si no existe en guardadas, crear nueva
+        agregarFila(nombreBase);
+      }
+    });
+    
+    // Agregar actividades adicionales que no están en la base
+    actividadesGuardadas.forEach(actividad => {
+      if (actividad && actividad.nombre && !actividadesBase.includes(actividad.nombre)) {
+        actividades.push(actividad.nombre);
+        agregarFila(actividad.nombre);
+        tiempos[actividad.nombre] = { ...actividad };
+        
+        const celdaDuracion = document.getElementById(`duracion-${actividad.nombre.replace(/\s+/g, "_")}`);
+        
+        if (actividad.estado === "corriendo") {
+          const t = tiempos[actividad.nombre];
+          t.inicio = new Date(t.inicio);
+          t.timerID = setInterval(() => {
+            const ahora = new Date();
+            const tiempoTotal = t.tiempoAcumulado + (ahora - t.inicio) / 1000;
+            celdaDuracion.innerText = formatearTiempo(tiempoTotal);
+          }, 100);
+        } else {
+          celdaDuracion.innerText = formatearTiempo(actividad.tiempoAcumulado || 0);
+        }
+        
+        const select = tabla.querySelector(`tr:last-child select`);
+        if (select && actividad.responsable) {
+          select.value = actividad.responsable;
+        }
+      }
+    });
+  } else {
+    // No hay actividades guardadas, usar solo base
+    crearFilasIniciales();
+  }
+
+  // Cargar paros externos (código existente)
   if (parosGuardados) {
     parosGuardados.forEach(p => {
       parosExternos[p.id] = p;
@@ -548,61 +594,33 @@ function cargarEstado() {
       tablaParos.appendChild(fila);
 
       if (p.estado === "corriendo") {
-  const celda = document.getElementById(`duracion-paro-${p.id}`);
-  p.inicio = new Date(p.inicio); // restaurar objeto Date
-  p.timerID = setInterval(() => {
-    const ahora = new Date();
-    const tiempoTotal = p.tiempoAcumulado + (ahora - p.inicio) / 1000;
-    celda.innerText = formatearTiempo(tiempoTotal);
-  }, 100);
-}
+        const celda = document.getElementById(`duracion-paro-${p.id}`);
+        p.inicio = new Date(p.inicio); // restaurar objeto Date
+        p.timerID = setInterval(() => {
+          const ahora = new Date();
+          const tiempoTotal = p.tiempoAcumulado + (ahora - p.inicio) / 1000;
+          celda.innerText = formatearTiempo(tiempoTotal);
+        }, 100);
+      }
     });
   }
 
-    setTimeout(() => {
-      CAMPOS_OBLIGATORIOS.forEach(id => {
-        const campo = document.getElementById(id);
-        if (campo && campo.value.trim()) {
-          campo.classList.add('campo-valido');
-        }
-      });
-    }, 100);
-
-  // Limpiar tabla y objeto tiempos
-  tabla.innerHTML = "";
-  for (const actividad of actividades) {
-    agregarFila(actividad.nombre);
-    tiempos[actividad.nombre] = actividad;
-
-    const nombre = actividad.nombre;
-    const celdaDuracion = document.getElementById(`duracion-${nombre.replace(/\s+/g, "_")}`);
-
-    if (actividad.estado === "corriendo") {
-      const t = tiempos[nombre];
-      t.inicio = new Date(t.inicio); // asegurar que sea objeto Date
-
-      t.timerID = setInterval(() => {
-        const ahora = new Date();
-        const tiempoTotal = t.tiempoAcumulado + (ahora - t.inicio) / 1000;
-        celdaDuracion.innerText = formatearTiempo(tiempoTotal);
-      }, 100);
-    } else {
-      celdaDuracion.innerText = formatearTiempo(actividad.tiempoAcumulado || 0);
-    }
-
-    const select = tabla.querySelector(`tr:last-child select`);
-    if (select && actividad.responsable) {
-      select.value = actividad.responsable;
+  setTimeout(() => {
+    CAMPOS_OBLIGATORIOS.forEach(id => {
+      const campo = document.getElementById(id);
+      if (campo && campo.value.trim()) {
+        campo.classList.add('campo-valido');
+      }
+    });
+  }, 100);
 }
-  }
-}
+
+
 function reiniciarTabla() {
   tabla.innerHTML = "";
-  for (const nombre of actividades) {
-    agregarFila(nombre);
-  }
+  actividades = [...actividadesBase]; // Resetear a actividades base
+  actividades.forEach(nombre => agregarFila(nombre));
 }
-
 
 
 // Función para cambiar de pantallas
@@ -818,21 +836,6 @@ window.onload = function() {
 
   // Recargar actividades base
   console.log("Actividades base:", actividades);
-  // Restaurar actividades base antes de reiniciar tabla
-actividades.length = 0;
-actividades.push(
-  "Desconectar molde",
-  "Desmontaje de molde",
-  "Bajar recamara",
-  "Cambio de altura",
-  "Cambio de vastago",
-  "Colocar recamara nueva",
-  "Meter molde a maquina",
-  "Montar vastago",
-  "Conectar molde",
-  "Cambio de cabezal",
-  "Arranque de máquina (procesos)"
-);
   reiniciarTabla();
   const hoy = new Date();
   document.getElementById("fechaCambio").value = hoy.toLocaleDateString("es-MX");
