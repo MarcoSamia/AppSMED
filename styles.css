@@ -654,3 +654,54 @@ body.sortable-dragging {
   pointer-events: auto !important;
   cursor: pointer !important;
 }
+
+
+/* MEJORAS PARA DRAG AND DROP */
+.sortable-ghost {
+  opacity: 0.4;
+  background: #f0f0f0;
+}
+
+.sortable-chosen {
+  transform: rotate(1deg);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.sortable-drag {
+  opacity: 0.9;
+  background: white;
+}
+
+/* MEJORAR DRAG HANDLE */
+.drag-icon {
+  cursor: grab;
+  transition: all 0.2s ease;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.drag-icon:hover {
+  background-color: #f0f0f0;
+}
+
+.drag-icon:active {
+  cursor: grabbing;
+  background-color: #e0e0e0;
+}
+
+/* PREVENIR SELECTION DURING DRAG */
+body.sortable-dragging {
+  user-select: none;
+}
+
+/* MEJORAS ESPECÍFICAS PARA MÓVIL */
+@media (max-width: 768px) {
+  .drag-icon {
+    padding: 12px;
+    font-size: 1.2rem;
+  }
+  
+  .sortable-chosen {
+    transform: none; /* Eliminar rotación en móvil para mejor rendimiento */
+  }
+}
