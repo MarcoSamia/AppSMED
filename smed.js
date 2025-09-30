@@ -34,7 +34,7 @@ function mostrarToast(mensaje, tipo = 'success', duracion = 3000) {
 
 
 
-// Función para usar Sortable en Drag Handle
+// Función para usar Sortable en Drag Handle - VERSIÓN SIMPLIFICADA
 function inicializarSortable() {
   const tablaBody = document.querySelector("#tabla tbody");
   
@@ -46,23 +46,17 @@ function inicializarSortable() {
   tablaBody.sortableInstance = new Sortable(tablaBody, {
     animation: 150,
     handle: ".drag-icon",
-    filter: ".ignore-elements",
-    preventOnFilter: false,
-    
-    // MEJORAS PARA MÓVILES
-    touchStartThreshold: 5,
-    delay: 150, // Aumentar delay para móviles
-    delayOnTouchOnly: true,
-    
-    // CONFIGURACIÓN MEJORADA
-    forceFallback: false, // Cambiar a false para mejor rendimiento
-    fallbackOnBody: false,
-    fallbackTolerance: 3,
-    
-    // MEJORAR COMPORTAMIENTO EN MÓVIL
     ghostClass: "sortable-ghost",
     chosenClass: "sortable-chosen",
     dragClass: "sortable-drag",
+    
+    // CONFIGURACIÓN MEJORADA - SIMPLIFICADA
+    forceFallback: false, // Usar HTML5 nativo cuando sea posible
+    fallbackOnBody: false,
+    
+    // MEJORAS PARA MÓVILES - REDUCIDAS
+    delay: 100, // Reducir delay para móviles
+    delayOnTouchOnly: true,
     
     onStart: function(evt) {
       document.body.style.cursor = 'grabbing';
@@ -75,16 +69,8 @@ function inicializarSortable() {
       document.body.style.userSelect = '';
       isDragging = false;
       
-      // Forzar actualización del estado
-      setTimeout(() => {
-        guardarEstado();
-      }, 100);
-    },
-    
-    // PREVENIR PROBLEMAS DE SCROLL
-    onMove: function(evt) {
-      // Permitir scroll natural en móviles
-      return true;
+      // Actualizar el estado inmediatamente
+      guardarEstado();
     }
   });
 }
@@ -544,8 +530,11 @@ function guardarEstado() {
     })
     .filter(actividad => actividad && actividad.nombre);
 
+  // Actualizar el array actividades con el nuevo orden
+  actividades = actividadesEnOrden.map(a => a.nombre);
+
   const datos = {
-    actividades: actividadesEnOrden, // Guardar en el orden actual de la tabla
+    actividades: actividadesEnOrden,
     parosExternos: Object.values(parosExternos),
     datosCambio: {
       inyectora: document.getElementById("inyectora").value,
