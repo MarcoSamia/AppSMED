@@ -569,52 +569,51 @@ function pausarReanudar(nombre, boton) {
 
 
 function guardarEstado() {
-  // Actualizar indicador visual a "guardando"
-  const autosaveIndicator = document.getElementById('autosave-indicator');
-  const autosaveStatus = document.getElementById('autosave-status');
-  const autosaveIcon = document.getElementById('autosave-icon');
-  
-  if (autosaveIndicator && autosaveStatus && autosaveIcon) {
-    autosaveIndicator.className = 'autosave-saving';
-    autosaveStatus.textContent = 'Guardando...';
-    autosaveIcon.textContent = '⏳';
-  }
-  
-  // Obtener las actividades en el orden actual de la tabla
-  const actividadesEnOrden = Array.from(document.querySelectorAll("#tabla tbody tr"))
-    .map(fila => {
-      const nombre = fila.children[1].innerText;
-      return tiempos[nombre];
-    })
-    .filter(actividad => actividad && actividad.nombre);
-
-  // Actualizar el array actividades con el nuevo orden
-  actividades = actividadesEnOrden.map(a => a.nombre);
-
-  // DEFINIR LA VARIABLE datos FUERA DEL TRY PARA QUE ESTÉ DISPONIBLE EN EL CATCH
-  const datos = {
-    actividades: actividadesEnOrden,
-    parosExternos: Object.values(parosExternos),
-    datosCambio: {
-      inyectora: document.getElementById("inyectora").value,
-      moldeSale: document.getElementById("moldeSale").value,
-      moldeEntra: document.getElementById("moldeEntra").value,
-      tipoCambio: document.getElementById("tipoCambio").value,
-      tiempoObjetivo: document.getElementById("tiempoObjetivo").value,
-      horaInicio: document.getElementById("horaInicio").value,
-      horaTermino: document.getElementById("horaTermino").value,
-      fechaCambio: document.getElementById("fechaCambio").value,
-      semanaCambio: document.getElementById("semanaCambio").value,
-      razonCambio: document.getElementById("razonCambio").value
-    },
-    // Agregar metadata de autoguardado
-    metadata: {
-      lastSave: new Date().toISOString(),
-      version: "1.0"
-    }
-  };
-  
   try {
+    // Actualizar indicador visual a "guardando"
+    const autosaveIndicator = document.getElementById('autosave-indicator');
+    const autosaveStatus = document.getElementById('autosave-status');
+    const autosaveIcon = document.getElementById('autosave-icon');
+    
+    if (autosaveIndicator && autosaveStatus && autosaveIcon) {
+      autosaveIndicator.className = 'autosave-saving';
+      autosaveStatus.textContent = 'Guardando...';
+      autosaveIcon.textContent = '⏳';
+    }
+    
+    // Obtener las actividades en el orden actual de la tabla
+    const actividadesEnOrden = Array.from(document.querySelectorAll("#tabla tbody tr"))
+      .map(fila => {
+        const nombre = fila.children[1].innerText;
+        return tiempos[nombre];
+      })
+      .filter(actividad => actividad && actividad.nombre);
+
+    // Actualizar el array actividades con el nuevo orden
+    actividades = actividadesEnOrden.map(a => a.nombre);
+
+    const datos = {
+      actividades: actividadesEnOrden,
+      parosExternos: Object.values(parosExternos),
+      datosCambio: {
+        inyectora: document.getElementById("inyectora").value,
+        moldeSale: document.getElementById("moldeSale").value,
+        moldeEntra: document.getElementById("moldeEntra").value,
+        tipoCambio: document.getElementById("tipoCambio").value,
+        tiempoObjetivo: document.getElementById("tiempoObjetivo").value,
+        horaInicio: document.getElementById("horaInicio").value,
+        horaTermino: document.getElementById("horaTermino").value,
+        fechaCambio: document.getElementById("fechaCambio").value,
+        semanaCambio: document.getElementById("semanaCambio").value,
+        razonCambio: document.getElementById("razonCambio").value
+      },
+      // Agregar metadata de autoguardado
+      metadata: {
+        lastSave: new Date().toISOString(),
+        version: "1.0"
+      }
+    };
+    
     localStorage.setItem("estadoSMED", JSON.stringify(datos));
     
     // Actualizar indicador visual a éxito
@@ -630,10 +629,15 @@ function guardarEstado() {
     }
     
     return true;
+    
   } catch (error) {
     console.error("Error al guardar estado:", error);
     
     // Actualizar indicador visual con error
+    const autosaveIndicator = document.getElementById('autosave-indicator');
+    const autosaveStatus = document.getElementById('autosave-status');
+    const autosaveIcon = document.getElementById('autosave-icon');
+    
     if (autosaveIndicator && autosaveStatus && autosaveIcon) {
       autosaveIndicator.className = 'autosave-error';
       autosaveStatus.textContent = 'Error en autoguardado';
