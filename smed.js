@@ -566,35 +566,50 @@ function pausarReanudar(nombre, boton) {
   guardarEstado();
 }
 
+
+
 function guardarEstado() {
-  // Obtener las actividades en el orden actual de la tabla
-  const actividadesEnOrden = Array.from(document.querySelectorAll("#tabla tbody tr"))
-    .map(fila => {
-      const nombre = fila.children[1].innerText;
-      return tiempos[nombre];
-    })
-    .filter(actividad => actividad && actividad.nombre);
-
-  // Actualizar el array actividades con el nuevo orden
-  actividades = actividadesEnOrden.map(a => a.nombre);
-
-  const datos = {
-    actividades: actividadesEnOrden,
-    parosExternos: Object.values(parosExternos),
-    datosCambio: {
-      inyectora: document.getElementById("inyectora").value,
-      moldeSale: document.getElementById("moldeSale").value,
-      moldeEntra: document.getElementById("moldeEntra").value,
-      tipoCambio: document.getElementById("tipoCambio").value,
-      tiempoObjetivo: document.getElementById("tiempoObjetivo").value,
-      horaInicio: document.getElementById("horaInicio").value,
-      horaTermino: document.getElementById("horaTermino").value,
-      fechaCambio: document.getElementById("fechaCambio").value,
-      semanaCambio: document.getElementById("semanaCambio").value,
-      razonCambio: document.getElementById("razonCambio").value
+  // Actualizar indicador visual a "guardando"
+  const autosaveIndicator = document.getElementById('autosave-indicator');
+  const autosaveStatus = document.getElementById('autosave-status');
+  const autosaveIcon = document.getElementById('autosave-icon');
+  
+  if (autosaveIndicator && autosaveStatus && autosaveIcon) {
+    autosaveIndicator.className = 'autosave-saving';
+    autosaveStatus.textContent = 'Guardando...';
+    autosaveIcon.textContent = '⏳';
+  }
+  
+  // ... resto del código de guardarEstado ...
+  
+  try {
+    localStorage.setItem("estadoSMED", JSON.stringify(datos));
+    
+    // Actualizar indicador visual a éxito
+    if (autosaveIndicator && autosaveStatus && autosaveIcon) {
+      autosaveIndicator.className = 'autosave-success';
+      autosaveStatus.textContent = 'Autoguardado activo';
+      autosaveIcon.textContent = '✅';
     }
-  };
-  localStorage.setItem("estadoSMED", JSON.stringify(datos));
+    
+    const lastSaveElement = document.getElementById('last-save-time');
+    if (lastSaveElement) {
+      lastSaveElement.textContent = `Último guardado: ${new Date().toLocaleTimeString()}`;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error al guardar estado:", error);
+    
+    // Actualizar indicador visual con error
+    if (autosaveIndicator && autosaveStatus && autosaveIcon) {
+      autosaveIndicator.className = 'autosave-error';
+      autosaveStatus.textContent = 'Error en autoguardado';
+      autosaveIcon.textContent = '❌';
+    }
+    
+    return false;
+  }
 }
 
 
