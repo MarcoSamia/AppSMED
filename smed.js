@@ -1,3 +1,13 @@
+// DEBUG: Verificar que la función se carga correctamente
+console.log("✅ Función guardarEstado cargada:", typeof guardarEstado);
+
+// DEBUG: Verificar que los elementos del DOM existen
+setTimeout(() => {
+  console.log("✅ Elemento autosave-indicator:", document.getElementById('autosave-indicator'));
+  console.log("✅ Elemento last-save-time:", document.getElementById('last-save-time'));
+}, 1000);
+
+
 // Actividades iniciales de la tabla
 const actividadesBase = [
   "Desconectar molde",
