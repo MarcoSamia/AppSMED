@@ -705,3 +705,30 @@ body.sortable-dragging {
     transform: none; /* Eliminar rotación en móvil para mejor rendimiento */
   }
 }
+
+/* ESTILOS PARA AUTOGUARDADO */
+#autosave-indicator {
+  transition: all 0.3s ease;
+}
+
+.autosave-saving {
+  background-color: #fff3e0 !important;
+  border-color: #ffb74d !important;
+  color: #e65100 !important;
+}
+
+.autosave-error {
+  background-color: #ffebee !important;
+  border-color: #ef5350 !important;
+  color: #c62828 !important;
+}
+
+.autosave-success {
+  background-color: #f1f8e9 !important;
+  border-color: #c5e1a5 !important;
+  color: #2e7d32 !important;
+}
+
+
+
+
