@@ -109,6 +109,51 @@ let isDragging = false;
 let currentDragElement = null;
 
 
+//AUTOSAVE
+let autoSaveInterval = null;
+const AUTO_SAVE_INTERVAL = 10000; // Guardar cada 5 segundos
+
+// Función para iniciar el autoguardado
+function iniciarAutoguardado() {
+  // Limpiar intervalo anterior si existe
+  if (autoSaveInterval) {
+    clearInterval(autoSaveInterval);
+  }
+  
+  // Configurar nuevo intervalo
+  autoSaveInterval = setInterval(() => {
+    const hayCronometrosActivos = Object.values(tiempos).some(t => 
+      t && (t.estado === "corriendo" || t.estado === "pausado")
+    ) || Object.values(parosExternos).some(p => 
+      p && (p.estado === "corriendo" || p.estado === "pausado")
+    );
+    
+    if (hayCronometrosActivos) {
+      guardarEstado();
+      console.log("Autoguardado realizado -", new Date().toLocaleTimeString());
+    }
+  }, AUTO_SAVE_INTERVAL);
+}
+
+// Función para detener el autoguardado
+function detenerAutoguardado() {
+  if (autoSaveInterval) {
+    clearInterval(autoSaveInterval);
+    autoSaveInterval = null;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Crear filas iniciales
 actividades.forEach(nombre => agregarFila(nombre));
@@ -559,6 +604,7 @@ function cargarEstado() {
   // Si no hay datos guardados, usar actividades base
   if (!datos) {
     crearFilasIniciales();
+    iniciarAutoguardado(); // Iniciar autoguardado
     return;
   }
 
@@ -592,16 +638,31 @@ function cargarEstado() {
         agregarFila(actividad.nombre);
         tiempos[actividad.nombre] = { ...actividad };
         
+        // MEJORA: Verificar y corregir estados inconsistentes
+        if (tiempos[actividad.nombre].estado === "corriendo") {
+          // Si estaba corriendo pero no tenemos timerID válido, poner en pausado
+          if (!tiempos[actividad.nombre].timerID) {
+            tiempos[actividad.nombre].estado = "pausado";
+          }
+        }
+        
         const celdaDuracion = document.getElementById(`duracion-${actividad.nombre.replace(/\s+/g, "_")}`);
         
         if (actividad.estado === "corriendo") {
           const t = tiempos[actividad.nombre];
-          t.inicio = new Date(t.inicio);
-          t.timerID = setInterval(() => {
-            const ahora = new Date();
-            const tiempoTotal = t.tiempoAcumulado + (ahora - t.inicio) / 1000;
-            celdaDuracion.innerText = formatearTiempo(tiempoTotal);
-          }, 100);
+          // MEJORA: Verificar que la fecha de inicio sea válida
+          if (t.inicio && !isNaN(new Date(t.inicio).getTime())) {
+            t.inicio = new Date(t.inicio);
+            t.timerID = setInterval(() => {
+              const ahora = new Date();
+              const tiempoTotal = t.tiempoAcumulado + (ahora - t.inicio) / 1000;
+              celdaDuracion.innerText = formatearTiempo(tiempoTotal);
+            }, 100);
+          } else {
+            // Si la fecha no es válida, poner en estado pausado
+            t.estado = "pausado";
+            celdaDuracion.innerText = formatearTiempo(t.tiempoAcumulado || 0);
+          }
         } else {
           celdaDuracion.innerText = formatearTiempo(actividad.tiempoAcumulado || 0);
         }
@@ -610,6 +671,9 @@ function cargarEstado() {
         if (select && actividad.responsable) {
           select.value = actividad.responsable;
         }
+        
+        // Actualizar estado visual de botones
+        actualizarBotones(actividad.nombre);
       }
     });
   } else {
@@ -644,12 +708,19 @@ function cargarEstado() {
 
       if (p.estado === "corriendo") {
         const celda = document.getElementById(`duracion-paro-${p.id}`);
-        p.inicio = new Date(p.inicio);
-        p.timerID = setInterval(() => {
-          const ahora = new Date();
-          const tiempoTotal = p.tiempoAcumulado + (ahora - p.inicio) / 1000;
-          celda.innerText = formatearTiempo(tiempoTotal);
-        }, 100);
+        // MEJORA: Verificar que la fecha de inicio sea válida
+        if (p.inicio && !isNaN(new Date(p.inicio).getTime())) {
+          p.inicio = new Date(p.inicio);
+          p.timerID = setInterval(() => {
+            const ahora = new Date();
+            const tiempoTotal = p.tiempoAcumulado + (ahora - p.inicio) / 1000;
+            celda.innerText = formatearTiempo(tiempoTotal);
+          }, 100);
+        } else {
+          // Si la fecha no es válida, poner en estado pausado
+          p.estado = "pausado";
+          celda.innerText = formatearTiempo(p.tiempoAcumulado);
+        }
       }
     });
   }
@@ -662,6 +733,9 @@ function cargarEstado() {
       }
     });
   }, 100);
+  
+  // INICIAR AUTOGUARDADO después de cargar todo
+  iniciarAutoguardado();
 }
 
 
@@ -812,90 +886,126 @@ function eliminarParo(id, btn) {
 
 // Función para cargar elementos de la aplicación
 window.onload = function() {
-  cargarEstado();
-  inicializarValidacion();
+  // Mostrar mensaje de carga
+  console.log("Cargando estado guardado...");
+  
+  try {
+    cargarEstado();
+    inicializarValidacion();
 
-  const fechaInput = document.getElementById("fechaCambio");
-  const semanaInput = document.getElementById("semanaCambio");
+    const fechaInput = document.getElementById("fechaCambio");
+    const semanaInput = document.getElementById("semanaCambio");
 
-  if (!fechaInput.value || !semanaInput.value) {
-    const hoy = new Date();
-    const fechaStr = hoy.toLocaleDateString("es-MX"); // ejemplo: 15/07/2025
-    const semana = obtenerNumeroSemana(hoy);
-    fechaInput.value = fechaStr;
-    semanaInput.value = semana;
-}
+    if (!fechaInput.value || !semanaInput.value) {
+      const hoy = new Date();
+      const fechaStr = hoy.toLocaleDateString("es-MX");
+      const semana = obtenerNumeroSemana(hoy);
+      fechaInput.value = fechaStr;
+      semanaInput.value = semana;
+    }
+    
+    console.log("Estado cargado correctamente");
+    
+  } catch (error) {
+    console.error("Error al cargar el estado:", error);
+    // En caso de error, crear actividades base
+    actividades = [...actividadesBase];
+    crearFilasIniciales();
+    iniciarAutoguardado();
+  }
 
-
+  // Resto del código del evento onload...
   document.getElementById("btn-reset").addEventListener("click", () => {
-  const confirmar = confirm("¿Seguro que quieres borrar todos los datos y reiniciar la aplicación?");
-  if (!confirmar) return;
+    const confirmar = confirm("¿Seguro que quieres borrar todos los datos y reiniciar la aplicación?");
+    if (!confirmar) return;
 
-  function limpiarValidaciones() {
-  // Limpiar mensajes de error
-  document.querySelectorAll('.mensaje-error').forEach(mensaje => {
-    mensaje.style.display = 'none';
+    // Detener autoguardado antes del reset
+    detenerAutoguardado();
+
+    function limpiarValidaciones() {
+      // Limpiar mensajes de error
+      document.querySelectorAll('.mensaje-error').forEach(mensaje => {
+        mensaje.style.display = 'none';
+      });
+      
+      // Limpiar estilos de campos
+      document.querySelectorAll('.campo-obligatorio, .campo-valido').forEach(campo => {
+        campo.classList.remove('campo-obligatorio');
+        campo.classList.remove('campo-valido');
+      });
+      
+      // Limpiar mensaje de feedback general
+      document.getElementById('feedback').innerText = '';
+    }
+
+    // Limpiar localStorage
+    localStorage.removeItem("estadoSMED");
+    localStorage.removeItem("checklistSMED");
+
+    // Limpiar checklist visual
+    const items = document.querySelectorAll("#tabla-checklist input[type=checkbox]");
+    items.forEach(item => item.checked = false);
+
+    // Limpiar cronómetros normales
+    for (const key in tiempos) {
+      if (tiempos[key].timerID) clearInterval(tiempos[key].timerID);
+    }
+    Object.keys(tiempos).forEach(k => delete tiempos[k]);
+    tabla.innerHTML = "";
+
+    // Limpiar cronómetros de paros
+    for (const key in parosExternos) {
+      if (parosExternos[key].timerID) clearInterval(parosExternos[key].timerID);
+    }
+    Object.keys(parosExternos).forEach(k => delete parosExternos[k]);
+    const tablaParos = document.querySelector("#tablaParos tbody");
+    if (tablaParos) tablaParos.innerHTML = "";
+
+    // Limpiar inputs de datos cambio molde
+    document.getElementById("inyectora").value = "";
+    document.getElementById("moldeSale").value = "";
+    document.getElementById("moldeEntra").value = "";
+    document.getElementById("tipoCambio").value = "";
+    document.getElementById("tiempoObjetivo").value = "";
+    document.getElementById("tiempoObjetivo").value = "";
+    document.getElementById("fechaCambio").value = "";
+    document.getElementById("semanaCambio").value = "";
+    document.getElementById("horaInicio").value = "";
+    document.getElementById("horaTermino").value = "";
+    document.getElementById("razonCambio").value = "";
+
+    // Recargar actividades base
+    console.log("Actividades base:", actividades);
+    reiniciarTabla();
+    const hoy = new Date();
+    document.getElementById("fechaCambio").value = hoy.toLocaleDateString("es-MX");
+    document.getElementById("semanaCambio").value = obtenerNumeroSemana(hoy);
+
+    setTimeout(() => {
+      inicializarSortable(); // Reinicializar Sortable después del reset
+      iniciarAutoguardado(); // Reiniciar autoguardado
+    }, 500);
   });
-  
-  // Limpiar estilos de campos
-  document.querySelectorAll('.campo-obligatorio, .campo-valido').forEach(campo => {
-    campo.classList.remove('campo-obligatorio');
-    campo.classList.remove('campo-valido');
-  });
-  
-  // Limpiar mensaje de feedback general
-  document.getElementById('feedback').innerText = '';
 }
 
-  // Limpiar localStorage
-  localStorage.removeItem("estadoSMED");
-  localStorage.removeItem("checklistSMED");
-
-  // Limpiar checklist visual
-  const items = document.querySelectorAll("#tabla-checklist input[type=checkbox]");
-  items.forEach(item => item.checked = false);
-
-  // Limpiar cronómetros normales
-  for (const key in tiempos) {
-    if (tiempos[key].timerID) clearInterval(tiempos[key].timerID);
+// Agregar evento beforeunload para guardar al cerrar/recargar
+window.addEventListener('beforeunload', function(e) {
+  // Guardar estado final antes de salir
+  guardarEstado();
+  
+  // Opcional: Mostrar confirmación si hay cronómetros activos
+  const hayCronometrosActivos = Object.values(tiempos).some(t => 
+    t && t.estado === "corriendo"
+  ) || Object.values(parosExternos).some(p => 
+    p && p.estado === "corriendo"
+  );
+  
+  if (hayCronometrosActivos) {
+    e.preventDefault();
+    e.returnValue = 'Tienes cronómetros activos. ¿Estás seguro de que quieres salir?';
+    return e.returnValue;
   }
-  Object.keys(tiempos).forEach(k => delete tiempos[k]);
-  tabla.innerHTML = "";
-
-  // Limpiar cronómetros de paros
-  for (const key in parosExternos) {
-    if (parosExternos[key].timerID) clearInterval(parosExternos[key].timerID);
-  }
-  Object.keys(parosExternos).forEach(k => delete parosExternos[k]);
-  const tablaParos = document.querySelector("#tablaParos tbody");
-  if (tablaParos) tablaParos.innerHTML = "";
-
-  // Limpiar inputs de datos cambio molde
-  document.getElementById("inyectora").value = "";
-  document.getElementById("moldeSale").value = "";
-  document.getElementById("moldeEntra").value = "";
-  document.getElementById("tipoCambio").value = "";
-  document.getElementById("tiempoObjetivo").value = "";
-  document.getElementById("tiempoObjetivo").value = "";
-  document.getElementById("fechaCambio").value = "";
-  document.getElementById("semanaCambio").value = "";
-  document.getElementById("horaInicio").value = "";
-  document.getElementById("horaTermino").value = "";
-  document.getElementById("razonCambio").value = "";
-
-  // Recargar actividades base
-  console.log("Actividades base:", actividades);
-  reiniciarTabla();
-  const hoy = new Date();
-  document.getElementById("fechaCambio").value = hoy.toLocaleDateString("es-MX");
-  document.getElementById("semanaCambio").value = obtenerNumeroSemana(hoy);
-
-  setTimeout(() => {
-    inicializarSortable(); // Reinicializar Sortable después del reset
-  }, 500);
 });
-
-}
 
 
 
