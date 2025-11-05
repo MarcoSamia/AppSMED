@@ -816,6 +816,79 @@ body.sortable-dragging {
   }
 }
 
+/* BOTONES COMPACTOS PARA GESTIÓN DE MOLDES EN MÓVILES */
+@media (max-width: 768px) {
+  /* Botones compactos solo iconos */
+  #tabla-moldes .btn-editar,
+  #tabla-moldes .btn-eliminar,
+  #tabla-moldes .btn-guardar,
+  #tabla-moldes .btn-cancelar {
+    min-width: 44px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    margin: 2px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+  }
+  
+  /* Eliminar texto de los botones */
+  #tabla-moldes .btn-editar span,
+  #tabla-moldes .btn-eliminar span,
+  #tabla-moldes .btn-guardar span,
+  #tabla-moldes .btn-cancelar span {
+    display: none;
+  }
+  
+  /* Agregar iconos usando pseudo-elementos */
+  #tabla-moldes .btn-editar::after {
+    content: "✏️";
+  }
+  
+  #tabla-moldes .btn-eliminar::after {
+    content: "🗑️";
+  }
+  
+  #tabla-moldes .btn-guardar::after {
+    content: "💾";
+  }
+  
+  #tabla-moldes .btn-cancelar::after {
+    content: "❌";
+  }
+  
+  /* Colores de fondo */
+  #tabla-moldes .btn-editar {
+    background-color: #ffc107;
+  }
+  
+  #tabla-moldes .btn-eliminar {
+    background-color: #dc3545;
+  }
+  
+  #tabla-moldes .btn-guardar {
+    background-color: #28a745;
+  }
+  
+  #tabla-moldes .btn-cancelar {
+    background-color: #6c757d;
+  }
+  
+  /* Contenedor de acciones en móvil */
+  #tabla-moldes td:nth-child(2) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
 
 
 
