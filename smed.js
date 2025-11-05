@@ -1677,13 +1677,26 @@ function actualizarSelectsMoldes() {
 }
 
 // Función para mostrar la lista de moldes en la pantalla de gestión
+// Función para mostrar la lista de moldes en la pantalla de gestión
 function mostrarListaMoldes() {
+  console.log("🔧 mostrarListaMoldes() ejecutándose...");
+  
   const tbody = document.getElementById("lista-moldes");
-  if (!tbody) return;
+  console.log("🔧 tbody encontrado:", tbody);
+  
+  if (!tbody) {
+    console.error("❌ ERROR: No se encontró el elemento con id 'lista-moldes'");
+    return;
+  }
+  
+  console.log("🔧 listaMoldes:", listaMoldes);
+  console.log("🔧 Cantidad de moldes:", listaMoldes.length);
   
   tbody.innerHTML = "";
   
   listaMoldes.forEach((molde, index) => {
+    console.log("🔧 Procesando molde:", molde, "índice:", index);
+    
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>
@@ -1699,6 +1712,8 @@ function mostrarListaMoldes() {
     `;
     tbody.appendChild(tr);
   });
+  
+  console.log("✅ mostrarListaMoldes() completado");
 }
 
 // Función para agregar un nuevo molde
