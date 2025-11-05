@@ -173,8 +173,22 @@ function agregarFila(nombre) {
   const id = nombre.replace(/\s+/g, "_");
   const fila = document.createElement("tr");
   
-  // Obtener responsable guardado (si existe)
-  const responsableGuardado = tiempos[nombre]?.responsable || "";
+  // 🆕 DETERMINAR RESPONSABLE POR DEFECTO SEGÚN LA ACTIVIDAD
+  let responsablePorDefecto = "";
+  
+  // Asignar responsables por defecto según el nombre de la actividad
+  if (nombre === "Arranque de máquina (procesos)") {
+    responsablePorDefecto = "Procesos";
+  } else if (actividadesBase.includes(nombre)) {
+    // Para todas las demás actividades base, usar SMED como default
+    responsablePorDefecto = "SMED";
+  } else {
+    // Para actividades nuevas agregadas por el usuario, usar el responsable guardado si existe
+    responsablePorDefecto = tiempos[nombre]?.responsable || "";
+  }
+  
+  // Obtener responsable guardado (si existe) o usar el por defecto
+  const responsableGuardado = tiempos[nombre]?.responsable || responsablePorDefecto;
 
   fila.innerHTML = `
     <td class="drag-handle" >
@@ -221,17 +235,43 @@ function agregarFila(nombre) {
       tiempoAcumulado: 0,
       estado: "detenido",
       timerID: null,
-      responsable: responsableGuardado // Asegurar que se guarde el responsable
+      responsable: responsablePorDefecto // 🆕 Usar el responsable por defecto
     };
   } else {
     // Si ya existe, asegurar que tenga la propiedad responsable
-    tiempos[nombre].responsable = tiempos[nombre].responsable || responsableGuardado;
+    tiempos[nombre].responsable = tiempos[nombre].responsable || responsablePorDefecto;
   }
 }
 
 // Función para crear filas iniciales usando el array actual
+// Función para crear filas iniciales usando el array actual
 function crearFilasIniciales() {
   tabla.innerHTML = "";
+  
+  // 🆕 INICIALIZAR RESPONSABLES EN EL OBJETO TIEMPOS ANTES DE AGREGAR FILAS
+  actividades.forEach(nombre => {
+    if (!tiempos[nombre]) {
+      let responsablePorDefecto = "";
+      
+      if (nombre === "Arranque de máquina (procesos)") {
+        responsablePorDefecto = "Procesos";
+      } else if (actividadesBase.includes(nombre)) {
+        responsablePorDefecto = "SMED";
+      }
+      
+      tiempos[nombre] = {
+        nombre: nombre,
+        inicio: null,
+        fin: null,
+        duracion: 0,
+        tiempoAcumulado: 0,
+        estado: "detenido", 
+        timerID: null,
+        responsable: responsablePorDefecto
+      };
+    }
+  });
+  
   actividades.forEach(nombre => agregarFila(nombre));
 }
 
@@ -926,7 +966,37 @@ function cargarEstado() {
 
 function reiniciarTabla() {
   tabla.innerHTML = "";
-  actividades = [...actividadesBase]; // Resetear a actividades base
+  
+  // 🆕 LIMPIAR SOLO LAS ACTIVIDADES NO-BASE Y REINICIAR LAS BASE CON SUS DEFAULTS
+  Object.keys(tiempos).forEach(key => {
+    // Mantener solo los datos de actividades base, eliminar las demás
+    if (!actividadesBase.includes(key)) {
+      if (tiempos[key].timerID) clearInterval(tiempos[key].timerID);
+      delete tiempos[key];
+    }
+  });
+  
+  // 🆕 REINICIAR ACTIVIDADES BASE CON SUS RESPONSABLES POR DEFECTO
+  actividades = [...actividadesBase];
+  
+  // Reinicializar responsables para actividades base
+  actividades.forEach(nombre => {
+    if (tiempos[nombre]) {
+      if (nombre === "Arranque de máquina (procesos)") {
+        tiempos[nombre].responsable = "Procesos";
+      } else {
+        tiempos[nombre].responsable = "SMED";
+      }
+      // Resetear otros datos del cronómetro
+      tiempos[nombre].inicio = null;
+      tiempos[nombre].fin = null;
+      tiempos[nombre].duracion = 0;
+      tiempos[nombre].tiempoAcumulado = 0;
+      tiempos[nombre].estado = "detenido";
+      tiempos[nombre].timerID = null;
+    }
+  });
+  
   actividades.forEach(nombre => agregarFila(nombre));
 }
 
