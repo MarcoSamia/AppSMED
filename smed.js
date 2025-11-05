@@ -809,10 +809,13 @@ function reiniciarTabla() {
 
 // Función para cambiar de pantallas
 function cambiarPantalla(idMostrar) {
-    const pantallas = ['pantalla-tiempos', 'pantalla-checklist'];
+    const pantallas = ['pantalla-tiempos', 'pantalla-checklist', 'pantalla-gestion-moldes'];
     pantallas.forEach(id => {
       document.getElementById(id).style.display = (id === idMostrar) ? 'block' : 'none';
     });
+    if (idMostrar === 'pantalla-gestion-moldes') {
+      mostrarListaMoldes();
+    }
   }
 
 
@@ -974,6 +977,7 @@ window.onload = function() {
     crearFilasIniciales();
     iniciarAutoguardado();
   }
+  inicializarSistemaMoldes();
 
   // Resto del código del evento onload...
   document.getElementById("btn-reset").addEventListener("click", () => {
@@ -1566,3 +1570,238 @@ document.addEventListener('touchmove', function(e) {
     e.preventDefault();
   }
 }, { passive: false });
+
+
+
+
+
+// =============================================
+// SISTEMA DE GESTIÓN DE MOLDES
+// =============================================
+
+// Lista de moldes (se cargará desde localStorage o se migrará de la lista actual)
+let listaMoldes = [];
+
+// Función para inicializar el sistema de moldes
+function inicializarSistemaMoldes() {
+  cargarMoldes();
+  actualizarSelectsMoldes();
+}
+
+// Función para cargar moldes desde localStorage
+function cargarMoldes() {
+  const moldesGuardados = localStorage.getItem("listaMoldesSMED");
+  
+  if (moldesGuardados) {
+    listaMoldes = JSON.parse(moldesGuardados);
+  } else {
+    // Migrar de la lista actual en el código
+    migrarMoldesDesdeCodigo();
+  }
+}
+
+// Función para migrar los moldes actuales del código
+function migrarMoldesDesdeCodigo() {
+  const moldesActuales = [
+    "CYLINDER WITH SLEEVE 176",
+    "CYLINDER WITH SLEEVE 177", 
+    "IGNITION COVER 225",
+    "BODY BALANCE K5",
+    "BODY BALANCE K7",
+    "TIMMING 002",
+    "TIMMING 661",
+    "IGNITION WOLF 852",
+    "IGNITION DOITER 061",
+    "HSG AS 060",
+    "HSG MS 071",
+    "GHL 331",
+    "GHR 336",
+    "MAIN HOUSING 285",
+    "CLUTCH HOUSING 308",
+    "CRANKCASE AS 821",
+    "CRANKCASE AS 822",
+    "CRANKCASE MS 831",
+    "CRANKCASE MS 832",
+    "CRANKCASE HALF 701",
+    "EATON 697",
+    "EATON 438",
+    "EATON 130",
+    "GHL 055",
+    "TRANSMISSION COVER MIDDLE 045",
+    "IGNITION COVER 059",
+    "IGNITION COVER 063"
+  ];
+  
+  listaMoldes = moldesActuales;
+  guardarMoldes();
+  console.log("✅ Moldes migrados desde código:", listaMoldes.length);
+}
+
+// Función para guardar moldes en localStorage
+function guardarMoldes() {
+  localStorage.setItem("listaMoldesSMED", JSON.stringify(listaMoldes));
+}
+
+// Función para actualizar los selects de moldeEntra y moldeSale
+function actualizarSelectsMoldes() {
+  const selectMoldeEntra = document.getElementById("moldeEntra");
+  const selectMoldeSale = document.getElementById("moldeSale");
+  
+  if (!selectMoldeEntra || !selectMoldeSale) return;
+  
+  // Guardar valores seleccionados actuales
+  const valorEntraActual = selectMoldeEntra.value;
+  const valorSaleActual = selectMoldeSale.value;
+  
+  // Limpiar opciones (excepto la primera)
+  selectMoldeEntra.innerHTML = '<option value="">-- Selecciona --</option>';
+  selectMoldeSale.innerHTML = '<option value="">-- Selecciona --</option>';
+  
+  // Agregar moldes
+  listaMoldes.forEach(molde => {
+    const optionEntra = new Option(molde, molde);
+    const optionSale = new Option(molde, molde);
+    
+    selectMoldeEntra.add(optionEntra);
+    selectMoldeSale.add(optionSale);
+  });
+  
+  // Restaurar valores seleccionados si existen
+  if (valorEntraActual && listaMoldes.includes(valorEntraActual)) {
+    selectMoldeEntra.value = valorEntraActual;
+  }
+  
+  if (valorSaleActual && listaMoldes.includes(valorSaleActual)) {
+    selectMoldeSale.value = valorSaleActual;
+  }
+}
+
+// Función para mostrar la lista de moldes en la pantalla de gestión
+function mostrarListaMoldes() {
+  const tbody = document.getElementById("lista-moldes");
+  if (!tbody) return;
+  
+  tbody.innerHTML = "";
+  
+  listaMoldes.forEach((molde, index) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>
+        <span class="nombre-molde">${molde}</span>
+        <input type="text" class="edit-molde-input" value="${molde}" style="display: none; width: 100%;">
+      </td>
+      <td>
+        <button onclick="editarMolde(${index})" class="btn-editar">✏️ Editar</button>
+        <button onclick="eliminarMolde(${index})" class="btn-eliminar">🗑️ Eliminar</button>
+        <button onclick="guardarEdicionMolde(${index})" class="btn-guardar" style="display: none;">💾 Guardar</button>
+        <button onclick="cancelarEdicionMolde(${index})" class="btn-cancelar" style="display: none;">❌ Cancelar</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Función para agregar un nuevo molde
+function agregarMolde() {
+  const input = document.getElementById("nuevoMoldeNombre");
+  const nombre = input.value.trim();
+  
+  if (!nombre) {
+    mostrarToast("Por favor, escribe el nombre del molde", "error");
+    return;
+  }
+  
+  if (listaMoldes.includes(nombre)) {
+    mostrarToast(`El molde "${nombre}" ya existe`, "error");
+    return;
+  }
+  
+  listaMoldes.push(nombre);
+  guardarMoldes();
+  actualizarSelectsMoldes();
+  mostrarListaMoldes();
+  
+  input.value = "";
+  mostrarToast(`Molde "${nombre}" agregado correctamente`, "success");
+}
+
+// Función para editar un molde
+function editarMolde(index) {
+  const fila = document.getElementById("lista-moldes").children[index];
+  const nombreSpan = fila.querySelector(".nombre-molde");
+  const input = fila.querySelector(".edit-molde-input");
+  const btnEditar = fila.querySelector(".btn-editar");
+  const btnEliminar = fila.querySelector(".btn-eliminar");
+  const btnGuardar = fila.querySelector(".btn-guardar");
+  const btnCancelar = fila.querySelector(".btn-cancelar");
+  
+  nombreSpan.style.display = "none";
+  input.style.display = "inline-block";
+  btnEditar.style.display = "none";
+  btnEliminar.style.display = "none";
+  btnGuardar.style.display = "inline-block";
+  btnCancelar.style.display = "inline-block";
+  
+  input.focus();
+  input.select();
+}
+
+// Función para guardar la edición de un molde
+function guardarEdicionMolde(index) {
+  const fila = document.getElementById("lista-moldes").children[index];
+  const input = fila.querySelector(".edit-molde-input");
+  const nuevoNombre = input.value.trim();
+  
+  if (!nuevoNombre) {
+    mostrarToast("El nombre del molde no puede estar vacío", "error");
+    return;
+  }
+  
+  if (listaMoldes.includes(nuevoNombre) && nuevoNombre !== listaMoldes[index]) {
+    mostrarToast(`El molde "${nuevoNombre}" ya existe`, "error");
+    return;
+  }
+  
+  const nombreAnterior = listaMoldes[index];
+  listaMoldes[index] = nuevoNombre;
+  guardarMoldes();
+  actualizarSelectsMoldes();
+  mostrarListaMoldes();
+  
+  mostrarToast(`Molde actualizado: "${nombreAnterior}" → "${nuevoNombre}"`, "success");
+}
+
+// Función para cancelar la edición
+function cancelarEdicionMolde(index) {
+  mostrarListaMoldes();
+}
+
+// Función para eliminar un molde
+function eliminarMolde(index) {
+  const nombreMolde = listaMoldes[index];
+  
+  if (!confirm(`¿Estás seguro de que quieres eliminar el molde "${nombreMolde}"?`)) {
+    return;
+  }
+  
+  listaMoldes.splice(index, 1);
+  guardarMoldes();
+  actualizarSelectsMoldes();
+  mostrarListaMoldes();
+  
+  mostrarToast(`Molde "${nombreMolde}" eliminado`, "warning");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
