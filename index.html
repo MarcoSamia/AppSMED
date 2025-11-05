@@ -266,6 +266,14 @@
     style="background-color: #1e37a4; color: white;">
     Ir a checklist
   </button>
+  
+  <!-- Boton para gestionar moldes -->
+ <button 
+   onclick="cambiarPantalla('pantalla-gestion-moldes')" 
+   class="btn-principal gestion-moldes" 
+   style="background-color: #6f42c1; color: white;">
+   Gestionar Moldes
+ </button>  
 
     <!-- boton para reiniciar la aplicacion -->
   <button id="btn-reset" class="btn-principal restablecer" style="background-color: #b11b20; color: white; margin-top: 20px;">Restablecer app</button>
@@ -327,6 +335,53 @@
   </button>
 </div>
 
+<!-- Pantalla de gestión de moldes -->
+<div id="pantalla-gestion-moldes" style="display:none;">
+  <div class="header">
+    <img src="logo7la.jpg" alt="Logo" class="logo">
+    <h1>Gestión de Moldes</h1>
+  </div>
+
+  <div style="margin: 20px 0;">
+    <h3>Agregar nuevo molde:</h3>
+    <input type="text" id="nuevoMoldeNombre" placeholder="Nombre del molde" style="padding: 8px; width: 300px; max-width: 100%;">
+    <button onclick="agregarMolde()" style="padding: 8px 16px; background: #1e37a4; color: white; border: none; border-radius: 4px; cursor: pointer;">Agregar Molde</button>
+  </div>
+
+  <table id="tabla-moldes">
+    <thead>
+      <tr>
+        <th>Nombre del Molde</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="lista-moldes">
+      <!-- Los moldes se cargan aquí dinámicamente -->
+    </tbody>
+  </table>
+
+  <div style="margin-top: 20px;">
+    <button onclick="cambiarPantalla('pantalla-tiempos')" style="background-color: #1e37a4; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; margin-right: 10px;">
+      Volver a Tiempos
+    </button>
+    <button onclick="exportarMoldes()" style="background-color: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;">
+      Exportar Lista
+    </button>
+    <button onclick="importarMoldes()" style="background-color: #ffc107; color: black; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; margin-left: 10px;">
+      Importar Moldes
+    </button>
+  </div>
+
+  <!-- Input oculto para importar -->
+  <input type="file" id="importar-moldes-file" accept=".json" style="display: none;">
+</div>
+
+
+
+
+
+
+  
 <!-- Librerías -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
