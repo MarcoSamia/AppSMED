@@ -117,6 +117,7 @@ let dragTimeout;
 let dragStartTime = 0;
 let isDragging = false;
 let currentDragElement = null;
+const ultimosTiemposValidos = {};
 
 
 //AUTOSAVE
@@ -591,20 +592,98 @@ function guardarEstado() {
       autosaveIcon.textContent = '⏳';
     }
     
-    // Obtener las actividades en el orden actual de la tabla
+    // Obtener las actividades en el orden actual de la tabla CON VALIDACIÓN
     const actividadesEnOrden = Array.from(document.querySelectorAll("#tabla tbody tr"))
       .map(fila => {
         const nombre = fila.children[1].innerText;
-        return tiempos[nombre];
+        const actividad = tiempos[nombre];
+        
+        if (actividad) {
+          let tiempoAcumuladoActual = actividad.tiempoAcumulado;
+          
+          // 🛡️ VALIDACIÓN CRÍTICA: Detectar y corregir valores inválidos
+          if (isNaN(tiempoAcumuladoActual) || !isFinite(tiempoAcumuladoActual) || tiempoAcumuladoActual < 0) {
+            console.warn(`⚠️ Valor inválido detectado en "${actividad.nombre}":`, tiempoAcumuladoActual);
+            
+            // 🔄 USAR ÚLTIMO TIEMPO VÁLIDO SI EXISTE
+            if (ultimosTiemposValidos[nombre] !== undefined) {
+              console.log(`🔄 Restaurando último tiempo válido para "${actividad.nombre}":`, ultimosTiemposValidos[nombre]);
+              tiempoAcumuladoActual = ultimosTiemposValidos[nombre];
+            } else {
+              // Si no hay último válido, usar 0
+              tiempoAcumuladoActual = 0;
+            }
+          } else {
+            // ✅ VALOR VÁLIDO - Guardar como último tiempo válido
+            ultimosTiemposValidos[nombre] = tiempoAcumuladoActual;
+          }
+          
+          // Calcular tiempo actual si está corriendo
+          if (actividad.estado === "corriendo" && actividad.inicio) {
+            const ahora = new Date();
+            const tiempoTranscurrido = (ahora - new Date(actividad.inicio)) / 1000;
+            
+            // Validar que el cálculo sea válido
+            if (!isNaN(tiempoTranscurrido) && isFinite(tiempoTranscurrido) && tiempoTranscurrido >= 0) {
+              tiempoAcumuladoActual += tiempoTranscurrido;
+              // 🛡️ Actualizar último tiempo válido con el cálculo correcto
+              ultimosTiemposValidos[nombre] = tiempoAcumuladoActual;
+            }
+          }
+          
+          return {
+            nombre: actividad.nombre,
+            inicio: actividad.inicio,
+            fin: actividad.fin,
+            duracion: actividad.duracion,
+            tiempoAcumulado: tiempoAcumuladoActual,
+            estado: actividad.estado,
+            timerID: null,
+            responsable: actividad.responsable || ""
+          };
+        }
+        return null;
       })
       .filter(actividad => actividad && actividad.nombre);
 
     // Actualizar el array actividades con el nuevo orden
     actividades = actividadesEnOrden.map(a => a.nombre);
 
+    // Preparar datos de paros externos (con misma validación)
+    const parosParaGuardar = Object.values(parosExternos).map(p => {
+      let tiempoAcumuladoActual = p.tiempoAcumulado;
+      
+      // Validación para paros
+      if (isNaN(tiempoAcumuladoActual) || !isFinite(tiempoAcumuladoActual) || tiempoAcumuladoActual < 0) {
+        console.warn(`⚠️ Valor inválido en paro "${p.nombre}":`, tiempoAcumuladoActual);
+        tiempoAcumuladoActual = 0;
+      }
+      
+      if (p.estado === "corriendo" && p.inicio) {
+        const ahora = new Date();
+        const tiempoTranscurrido = (ahora - new Date(p.inicio)) / 1000;
+        
+        if (!isNaN(tiempoTranscurrido) && isFinite(tiempoTranscurrido) && tiempoTranscurrido >= 0) {
+          tiempoAcumuladoActual += tiempoTranscurrido;
+        }
+      }
+      
+      return {
+        id: p.id,
+        departamento: p.departamento,
+        nombre: p.nombre,
+        inicio: p.inicio,
+        fin: p.fin,
+        tiempoAcumulado: tiempoAcumuladoActual,
+        estado: p.estado,
+        timerID: null
+      };
+    });
+
+    // Obtener valores actuales de los campos
     const datos = {
       actividades: actividadesEnOrden,
-      parosExternos: Object.values(parosExternos),
+      parosExternos: parosParaGuardar,
       datosCambio: {
         inyectora: document.getElementById("inyectora").value,
         moldeSale: document.getElementById("moldeSale").value,
@@ -617,13 +696,16 @@ function guardarEstado() {
         semanaCambio: document.getElementById("semanaCambio").value,
         razonCambio: document.getElementById("razonCambio").value
       },
-      // Agregar metadata de autoguardado
+      // 🛡️ GUARDAR TAMBIÉN LOS ÚLTIMOS TIEMPOS VÁLIDOS
+      ultimosTiemposValidos: ultimosTiemposValidos,
       metadata: {
         lastSave: new Date().toISOString(),
-        version: "1.0"
+        version: "1.1", // Incrementar versión por el nuevo formato
+        userAgent: navigator.userAgent
       }
     };
     
+    // Guardar en localStorage
     localStorage.setItem("estadoSMED", JSON.stringify(datos));
     
     // Actualizar indicador visual a éxito
@@ -638,10 +720,12 @@ function guardarEstado() {
       lastSaveElement.textContent = `Último guardado: ${new Date().toLocaleTimeString()}`;
     }
     
+    console.log("💾 Estado guardado correctamente con validación de tiempos");
+    
     return true;
     
   } catch (error) {
-    console.error("Error al guardar estado:", error);
+    console.error("❌ Error al guardar estado:", error);
     
     // Actualizar indicador visual con error
     const autosaveIndicator = document.getElementById('autosave-indicator');
@@ -665,11 +749,21 @@ function cargarEstado() {
   // Si no hay datos guardados, usar actividades base
   if (!datos) {
     crearFilasIniciales();
-    iniciarAutoguardado(); // Iniciar autoguardado
+    iniciarAutoguardado();
     return;
   }
 
-  const { actividades: actividadesGuardadas, datosCambio, parosExternos: parosGuardados } = datos;
+  const { 
+    actividades: actividadesGuardadas, 
+    datosCambio, 
+    parosExternos: parosGuardados,
+    ultimosTiemposValidos: ultimosValidosGuardados 
+  } = datos;
+
+  // 🛡️ CARGAR ÚLTIMOS TIEMPOS VÁLIDOS SI EXISTEN
+  if (ultimosValidosGuardados) {
+    Object.assign(ultimosTiemposValidos, ultimosValidosGuardados);
+  }
 
   // Cargar datos del cambio
   if (datosCambio) {
@@ -687,50 +781,67 @@ function cargarEstado() {
 
   // Limpiar tabla y objeto tiempos
   tabla.innerHTML = "";
-  
-  // PRIMERO cargar actividades guardadas si existen
+  Object.keys(tiempos).forEach(key => delete tiempos[key]);
+
+  // Cargar actividades guardadas
   if (actividadesGuardadas && actividadesGuardadas.length > 0) {
-    // Usar las actividades guardadas manteniendo el orden
     actividades = actividadesGuardadas.map(a => a.nombre);
     
-    // Crear las filas en el orden guardado
     actividadesGuardadas.forEach(actividad => {
       if (actividad && actividad.nombre) {
         agregarFila(actividad.nombre);
-        tiempos[actividad.nombre] = { ...actividad };
         
-        // MEJORA: Verificar y corregir estados inconsistentes
-        if (tiempos[actividad.nombre].estado === "corriendo") {
-          // Si estaba corriendo pero no tenemos timerID válido, poner en pausado
-          if (!tiempos[actividad.nombre].timerID) {
-            tiempos[actividad.nombre].estado = "pausado";
-          }
-        }
+        let tiempoParaUsar = actividad.tiempoAcumulado || 0;
         
-        const celdaDuracion = document.getElementById(`duracion-${actividad.nombre.replace(/\s+/g, "_")}`);
-        
-        if (actividad.estado === "corriendo") {
-          const t = tiempos[actividad.nombre];
-          // MEJORA: Verificar que la fecha de inicio sea válida
-          if (t.inicio && !isNaN(new Date(t.inicio).getTime())) {
-            t.inicio = new Date(t.inicio);
-            t.timerID = setInterval(() => {
-              const ahora = new Date();
-              const tiempoTotal = t.tiempoAcumulado + (ahora - t.inicio) / 1000;
-              celdaDuracion.innerText = formatearTiempo(tiempoTotal);
-            }, 100);
+        // 🛡️ VALIDACIÓN AL CARGAR: Usar último tiempo válido si el actual es inválido
+        if (isNaN(tiempoParaUsar) || !isFinite(tiempoParaUsar) || tiempoParaUsar < 0) {
+          console.warn(`⚠️ Valor inválido al cargar "${actividad.nombre}":`, tiempoParaUsar);
+          
+          if (ultimosTiemposValidos[actividad.nombre] !== undefined) {
+            console.log(`🔄 Usando último tiempo válido para "${actividad.nombre}":`, ultimosTiemposValidos[actividad.nombre]);
+            tiempoParaUsar = ultimosTiemposValidos[actividad.nombre];
           } else {
-            // Si la fecha no es válida, poner en estado pausado
-            t.estado = "pausado";
-            celdaDuracion.innerText = formatearTiempo(t.tiempoAcumulado || 0);
+            tiempoParaUsar = 0;
           }
         } else {
-          celdaDuracion.innerText = formatearTiempo(actividad.tiempoAcumulado || 0);
+          // ✅ VALOR VÁLIDO - Guardar como último tiempo válido
+          ultimosTiemposValidos[actividad.nombre] = tiempoParaUsar;
         }
         
-        const select = tabla.querySelector(`tr:last-child select`);
-        if (select && actividad.responsable) {
-          select.value = actividad.responsable;
+        // Restaurar todos los datos de la actividad
+        tiempos[actividad.nombre] = {
+          nombre: actividad.nombre,
+          inicio: actividad.inicio ? new Date(actividad.inicio) : null,
+          fin: actividad.fin ? new Date(actividad.fin) : null,
+          duracion: actividad.duracion || 0,
+          tiempoAcumulado: tiempoParaUsar, // 🛡️ Usar tiempo validado
+          estado: actividad.estado || "detenido",
+          timerID: null,
+          responsable: actividad.responsable || ""
+        };
+        
+        const celdaDuracion = document.getElementById(`duracion-${actividad.nombre.replace(/\s+/g, "_")}`);
+        const selectResponsable = document.querySelector(`#tabla tr:last-child select`);
+        
+        // Configurar responsable
+        if (selectResponsable && actividad.responsable) {
+          selectResponsable.value = actividad.responsable;
+        }
+        
+        // Mostrar tiempo (usando el valor validado)
+        celdaDuracion.innerText = formatearTiempo(tiempoParaUsar);
+        
+        // Si estaba corriendo, reiniciar el timer
+        if (actividad.estado === "corriendo") {
+          const t = tiempos[actividad.nombre];
+          t.inicio = new Date();
+          t.estado = "corriendo";
+          
+          t.timerID = setInterval(() => {
+            const ahora = new Date();
+            const tiempoTotal = t.tiempoAcumulado + (ahora - t.inicio) / 1000;
+            celdaDuracion.innerText = formatearTiempo(tiempoTotal);
+          }, 100);
         }
         
         // Actualizar estado visual de botones
@@ -738,15 +849,27 @@ function cargarEstado() {
       }
     });
   } else {
-    // Si no hay actividades guardadas, usar actividades base
     actividades = [...actividadesBase];
     crearFilasIniciales();
   }
 
-  // Cargar paros externos
+  // ... (el resto de cargarEstado() para paros se mantiene igual)
+  // Cargar paros externos (código existente)
   if (parosGuardados) {
+    // Limpiar paros existentes
+    Object.keys(parosExternos).forEach(key => {
+      if (parosExternos[key].timerID) clearInterval(parosExternos[key].timerID);
+      delete parosExternos[key];
+    });
+    
+    const tablaParosBody = document.querySelector("#tablaParos tbody");
+    if (tablaParosBody) tablaParosBody.innerHTML = "";
+
     parosGuardados.forEach(p => {
-      parosExternos[p.id] = p;
+      parosExternos[p.id] = {
+        ...p,
+        timerID: null
+      };
 
       const fila = document.createElement("tr");
       fila.innerHTML = `
@@ -765,27 +888,28 @@ function cargarEstado() {
           <button onclick="eliminarParo('${p.id}', this)">🗑️</button>
         </td>
       `;
-      tablaParos.appendChild(fila);
+      
+      if (document.querySelector("#tablaParos tbody")) {
+        document.querySelector("#tablaParos tbody").appendChild(fila);
+      }
 
+      // Si el paro estaba corriendo, reiniciar el timer
       if (p.estado === "corriendo") {
+        const paro = parosExternos[p.id];
+        paro.inicio = new Date();
+        paro.estado = "corriendo";
+        
         const celda = document.getElementById(`duracion-paro-${p.id}`);
-        // MEJORA: Verificar que la fecha de inicio sea válida
-        if (p.inicio && !isNaN(new Date(p.inicio).getTime())) {
-          p.inicio = new Date(p.inicio);
-          p.timerID = setInterval(() => {
-            const ahora = new Date();
-            const tiempoTotal = p.tiempoAcumulado + (ahora - p.inicio) / 1000;
-            celda.innerText = formatearTiempo(tiempoTotal);
-          }, 100);
-        } else {
-          // Si la fecha no es válida, poner en estado pausado
-          p.estado = "pausado";
-          celda.innerText = formatearTiempo(p.tiempoAcumulado);
-        }
+        paro.timerID = setInterval(() => {
+          const ahora = new Date();
+          const tiempoTotal = paro.tiempoAcumulado + (ahora - paro.inicio) / 1000;
+          celda.innerText = formatearTiempo(tiempoTotal);
+        }, 100);
       }
     });
   }
 
+  // Validación de campos
   setTimeout(() => {
     CAMPOS_OBLIGATORIOS.forEach(id => {
       const campo = document.getElementById(id);
